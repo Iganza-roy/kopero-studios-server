@@ -84,6 +84,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
 ]
 
 CORS_ORIGIN_ALLOW_ALL=True
@@ -172,12 +173,12 @@ ACCOUNT_EMAIL_VERIFICATION="none"
 
 
 REST_AUTH = {
-    'LOGIN_SERIALIZER': "thecart_auth.serializers.CustomLoginSerializer",
-    "PASSWORD_RESET_SERIALIZER": "thecart_auth.serializers.CustomPasswordResetSerializer",
-    "USER_DETAILS_SERIALIZER": "thecart_auth.serializers.ReadUserSerializer",
-    "PASSWORD_CHANGE_SERIALIZER": "thecart_auth.serializers.CustomPasswordChangeSerializer",
+    'LOGIN_SERIALIZER': "kopero_auth.serializers.CustomLoginSerializer",
+    "PASSWORD_RESET_SERIALIZER": "kopero_auth.serializers.CustomPasswordResetSerializer",
+    "USER_DETAILS_SERIALIZER": "kopero_auth.serializers.ReadUserSerializer",
+    "PASSWORD_CHANGE_SERIALIZER": "kopero_auth.serializers.CustomPasswordChangeSerializer",
     'USE_JWT': True,
-    "REGISTER_SERIALIZER": "thecart_auth.serializers.CustomRegisterSerializer"
+    "REGISTER_SERIALIZER": "kopero_auth.serializers.CustomRegisterSerializer"
 }
 
 WSGI_APPLICATION = 'kopero.wsgi.application'

@@ -335,7 +335,7 @@ class CustomPasswordResetSerializer(PasswordResetSerializer):
             "use_https": True,
             "subject_template_name": "registration/password_reset_subject.txt",
             "html_email_template_name": "registration/password_reset_email.html",
-            "from_email": "Thecart Accounts <kmathew201@gmail.com",
+            "from_email": "KOpero Accounts <kmathew201@gmail.com",
         }
 
 

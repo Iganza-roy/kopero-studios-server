@@ -86,7 +86,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     objects = MyUserManager()
 
     MAIL_FIELD = "email"
-    USERNAME_FIELD = "email"
+    USERNAME_FIELD = "username"
     REQUIRED_FIELDS = ['email', 'first_name', 'last_name']
 
     def _usable(self):
@@ -95,9 +95,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     _usable.boolean = True
     usable = property(_usable)
 
-    # @property
-    # def full_name(self):
-    #     return "{0} {1}".format(self.first_name, self.last_name)
+    @property
+    def full_name(self):
+        return "{0} {1}".format(self.first_name, self.last_name)
 
     def get_full_name(self):
         """
@@ -123,7 +123,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def _is_photographer(self):
         """Returns whether a user is photographer or not"""
-        return self.role == self.RIDER
+        return self.role == self.Photographer
 
     _is_photographer.boolean = True
     is_photographer = property(_is_photographer)
@@ -138,7 +138,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     class Meta:
         db_table = "users"
         ordering = ["-date_joined"]
-
+        constraints = [
+            models.UniqueConstraint(fields=['username', 'email'], name='unique_username_email')
+        ]
 
 class Profile(TimeStampedModelMixin):
     """
