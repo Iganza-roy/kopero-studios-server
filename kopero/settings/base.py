@@ -35,7 +35,7 @@ SECRET_KEY = config("SECRET_KEY")
 DEBUG = config('DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='127.0.0.1', cast=Csv())
 SITE_ID = config("SITE_ID", cast=int)
-print(f'DJANGO_SETTINGS_MODULE: {config("DJANGO_SETTINGS_MODULE")}')
+# print(f'DJANGO_SETTINGS_MODULE: {config("DJANGO_SETTINGS_MODULE")}')
 
 
 # print(f"DEBUG: {DEBUG}")
@@ -53,7 +53,8 @@ DJANGO_APPS = [
 ]
 
 THIRD_PARTY_APPS = [
-
+    "rest_framework",
+    "rest_framework_simplejwt"
 ]
 
 LOCAL_APPS = [
@@ -93,6 +94,8 @@ TEMPLATES = [
         },
     },
 ]
+
+AUTH_USER_MODEL = "kopero_auth.User"
 
 WSGI_APPLICATION = 'kopero.wsgi.application'
 
