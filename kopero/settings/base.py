@@ -35,7 +35,12 @@ SECRET_KEY = config("SECRET_KEY")
 DEBUG = config('DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='127.0.0.1', cast=Csv())
 SITE_ID = config("SITE_ID", cast=int)
+print(f'DJANGO_SETTINGS_MODULE: {config("DJANGO_SETTINGS_MODULE")}')
 
+
+# print(f"DEBUG: {DEBUG}")
+# print(f"ALLOWED_HOSTS: {ALLOWED_HOSTS}")
+# print(f"SITE_ID: {SITE_ID}")
 # Application definition
 
 DJANGO_APPS = [
