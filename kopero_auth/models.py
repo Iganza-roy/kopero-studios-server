@@ -6,6 +6,7 @@ from django.core.mail import send_mail
 from uuid import uuid4 as uuid
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
+from common.models import TimeStampedModelMixin
 
 
 # Create your models here.
@@ -137,3 +138,23 @@ class User(AbstractBaseUser, PermissionsMixin):
     class Meta:
         db_table = "users"
         ordering = ["-date_joined"]
+
+
+class Profile(TimeStampedModelMixin):
+    """
+    A user profile instance - stores extra information about a user instance
+    - user: The user object to which this profile belongs
+    - picture: URL to the user's profile picture
+    """
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        related_name="profile",
+        on_delete=models.CASCADE,
+    )
+    picture = models.URLField(blank=True)
+    address = models.CharField(max_length=250,blank=True)
+    town = models.CharField(max_length=250,blank=True)
+
+    def __str__(self):
+        return self.user.get_username()

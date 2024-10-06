@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 from decouple import config, Csv
 import os
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -50,18 +51,26 @@ DJANGO_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    "django.contrib.sites"
 ]
 
 THIRD_PARTY_APPS = [
     "rest_framework",
-    "rest_framework_simplejwt"
+    'rest_framework.authtoken',
+    "rest_framework_simplejwt",
+    'dj_rest_auth',
+    'dj_rest_auth.registration',
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    'corsheaders',
 ]
 
 LOCAL_APPS = [
     "kopero_auth.apps.KoperoAuthConfig",
     "booking.apps.BookingConfig",
     "services.apps.ServicesConfig",
-    "payments.apps.PaymentsConfig"
+    "payments.apps.PaymentsConfig",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + LOCAL_APPS + THIRD_PARTY_APPS
@@ -76,6 +85,13 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+CORS_ORIGIN_ALLOW_ALL=True
+CORS_ALLOW_CREDENTIALS=True
+CORS_ORIGIN_WHITELIST = (
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+)
 
 ROOT_URLCONF = 'kopero.urls'
 
@@ -96,6 +112,73 @@ TEMPLATES = [
 ]
 
 AUTH_USER_MODEL = "kopero_auth.User"
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.AllowAny',
+    ),
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': config('PAGE_SIZE', cast=int, default=10),
+    'COERCE_DECIMAL_TO_STRING': False,
+}
+
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=365*5),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN': False,
+
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'VERIFYING_KEY': None,
+    'AUDIENCE': None,
+    'ISSUER': None,
+
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    'USER_AUTHENTICATION_RULE': 'rest_framework_simplejwt.authentication.default_user_authentication_rule',
+
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
+
+    'JTI_CLAIM': 'jti',
+
+    'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
+    'SLIDING_TOKEN_LIFETIME': timedelta(hours=5),
+    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
+}
+
+USE_JWT = True
+JWT_AUTH_COOKIE = 'auth-cookie'
+OLD_PASSWORD_FIELD_ENABLED = False
+
+
+ACCOUNT_ADAPTER = 'kopero_auth.adapter.CustomAccountAdapter'
+ACCOUNT_USERNAME_REQUIRED = True
+ACCOUNT_USER_MODEL_USERNAME_FIELD = 'username'
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_AUTHENTICATION_METHOD = 'username_email'
+USERNAME_FIELD="username"
+ACCOUNT_LOGOUT_ON_GET = False
+ACCOUNT_EMAIL_VERIFICATION="none"
+
+
+REST_AUTH = {
+    'LOGIN_SERIALIZER': "thecart_auth.serializers.CustomLoginSerializer",
+    "PASSWORD_RESET_SERIALIZER": "thecart_auth.serializers.CustomPasswordResetSerializer",
+    "USER_DETAILS_SERIALIZER": "thecart_auth.serializers.ReadUserSerializer",
+    "PASSWORD_CHANGE_SERIALIZER": "thecart_auth.serializers.CustomPasswordChangeSerializer",
+    'USE_JWT': True,
+    "REGISTER_SERIALIZER": "thecart_auth.serializers.CustomRegisterSerializer"
+}
 
 WSGI_APPLICATION = 'kopero.wsgi.application'
 
@@ -134,3 +217,5 @@ USE_TZ = True
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
