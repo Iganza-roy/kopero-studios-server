@@ -1,0 +1,51 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up SSH key
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Deploy code via SSH
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+            # Enter the container
+            pct enter ${{ secrets.CONTAINER_NUMBER }} << 'CONTAINER_COMMANDS'
+              
+              # Change to the project directory
+              cd /root/kopero/kopero-studios-server
+
+              # Pull the latest changes
+              git pull origin main
+
+              # Activate the virtual environment
+              source venv/bin/activate
+
+              # Install any new dependencies
+              pip install -r requirements.txt
+              python manage.py makemigrations
+              # Run database migrations
+              python manage.py migrate
+
+              # Collect static files
+              python manage.py collectstatic --noinput
+
+              # Restart Gunicorn
+              sudo systemctl restart gunicorn
+
+              # Reload Nginx (if needed)
+              sudo systemctl reload nginx
+            CONTAINER_COMMANDS
+          EOF
