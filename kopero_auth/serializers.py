@@ -63,9 +63,10 @@ class UserSerializer(serializers.ModelSerializer):
             "phone",
             "is_active",
             "is_deleted",
+            "is_photographer",
             "is_regular_user",
             "full_name",
-            "is_ops_admin",
+            # "is_ops_admin",
         )
         extra_kwargs = {"password": {"write_only": True}}
         read_only_fields = ("id", "full_name")
@@ -181,7 +182,7 @@ class ReadUserSerializer(serializers.ModelSerializer):
             "is_deleted",
             "is_ops_admin",
             "is_superuser",
-            "_is_photographer",
+            "is_photographer",
             "_is_regular_user",
             "full_name"
         )
