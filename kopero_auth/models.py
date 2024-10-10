@@ -1,4 +1,5 @@
 from django.db import models
+from booking.models import AvailableTime
 from django.contrib.auth.models import PermissionsMixin
 from django.contrib.auth.base_user import BaseUserManager, AbstractBaseUser
 from django.utils import timezone
@@ -52,9 +53,11 @@ class User(AbstractBaseUser, PermissionsMixin):
         related_name="deleted_%(class)s",
     )
     OPERATIONS_ADMIN = "operations"
+    REGULAR = 'regular'
+    PHOTOGRAPHER = 'photographer'
     ROLE_CHOICES = (
-        ("Photographer", "photographer"),
-        ("Regular", "regular"),
+        ("PHOTOGRAPHER", "photographer"),
+        ("REGULAR", "regular"),
         (OPERATIONS_ADMIN, "Operations Admin"),
     )
     role = models.CharField(
@@ -123,7 +126,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def _is_photographer(self):
         """Returns whether a user is photographer or not"""
-        return self.role == self.Photographer
+        return self.role == self.PHOTOGRAPHER
 
     _is_photographer.boolean = True
     is_photographer = property(_is_photographer)
@@ -157,6 +160,9 @@ class Profile(TimeStampedModelMixin):
     picture = models.URLField(blank=True)
     address = models.CharField(max_length=250,blank=True)
     town = models.CharField(max_length=250,blank=True)
+
+    portfolio_link = models.URLField(blank=True, null=True)
+    available_time = models.ManyToManyField(AvailableTime)
 
     def __str__(self):
         return self.user.get_username()
