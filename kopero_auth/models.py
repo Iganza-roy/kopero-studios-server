@@ -1,5 +1,5 @@
 from django.db import models
-from booking.models import AvailableTime
+# from booking.models import AvailableTime
 from django.contrib.auth.models import PermissionsMixin
 from django.contrib.auth.base_user import BaseUserManager, AbstractBaseUser
 from django.utils import timezone
@@ -162,7 +162,7 @@ class Profile(TimeStampedModelMixin):
     town = models.CharField(max_length=250,blank=True)
 
     portfolio_link = models.URLField(blank=True, null=True)
-    available_time = models.ManyToManyField(AvailableTime)
+    available_time = models.ManyToManyField('booking.AvailableTime')
 
     def __str__(self):
         return self.user.get_username()
