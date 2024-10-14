@@ -27,12 +27,58 @@ UserModel = get_user_model()
 class ProfileSerializer(serializers.ModelSerializer):
     """
     Serializer class for a user profile instance
+    
     """
+    username = serializers.CharField(source='user.username', read_only=True)
+    picture = serializers.ImageField(source='user.picture', required=False)
+    user = serializers.UUIDField(source='user.id', read_only=True)
+    class Meta:
+        model = Profile
+        fields = ['username', 'picture', 'user', 'address', 'town', 'description', 'portfolio_link']
+        extra_kwargs = {
+            'address': {'required': False},
+            'town': {'required': False},
+            'description': {'required': True},
+            'portfolio_link': {'required': False},
+            
+        }
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    profile = ProfileSerializer()
 
     class Meta:
-        fields = ['picture', 'address', 'town', 'available_time']
-        model = Profile
+        model = User
+        fields = ['id', 'picture', 'email', 'first_name', 'last_name', 'profile']
+        extra_kwargs = {
+            'picture': {'required': False},
+            'email': {'required': False},
+            'first_name': {'required': False},
+            'last_name': {'required': False},
+        }
 
+    def update(self, instance, validated_data):
+        profile_data = validated_data.pop('profile', {})
+        profile = instance.profile
+
+        instance.email = validated_data.get('email', instance.email)
+        instance.first_name = validated_data.get('first_name', instance.first_name)
+        instance.last_name = validated_data.get('last_name', instance.last_name)
+        instance.picture = validated_data.get('picture', instance.picture)
+        instance.save()
+
+        if 'photographer' in instance.groups.values_list('name', flat=True):
+            profile.address = profile_data.get('address', profile.address)
+            profile.town = profile_data.get('town', profile.town)
+            profile.description = profile_data.get('description', profile.description)
+            profile.portfolio_link = profile_data.get('portfolio_link', profile.portfolio_link)
+        else:
+            profile.address = profile_data.get('address', profile.address)
+            profile.town = profile_data.get('town', profile.town)
+
+        if 'picture' in profile_data:
+            profile.picture = profile_data['picture']
+        profile.save()
+        return instance
 
 class ReadProfileSerializer(serializers.ModelSerializer):
     """
@@ -40,7 +86,7 @@ class ReadProfileSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = Profile
-        fields = ['picture', 'address', 'town', 'available_time']
+        fields = ['address', 'town', 'available_time']
 
 
 class UserSerializer(serializers.ModelSerializer):
