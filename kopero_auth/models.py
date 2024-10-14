@@ -45,6 +45,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     phone = models.CharField(max_length=20, null=True, blank=True)
     is_ops_admin = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
+    picture = models.URLField(blank=True)
     deleted_at = models.DateTimeField(null=True)
     modified_by = models.ForeignKey(
         "User",
@@ -56,9 +57,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     REGULAR = 'regular'
     PHOTOGRAPHER = 'photographer'
     ROLE_CHOICES = (
-        ("PHOTOGRAPHER", "photographer"),
-        ("REGULAR", "regular"),
-        (OPERATIONS_ADMIN, "Operations Admin"),
+        ('photographer', 'Photographer'),
+        ('Regular', 'regular'),
+        ('Operations Admin', "Operations Admin"),
     )
     role = models.CharField(
         _("user role"),
@@ -119,14 +120,15 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def _is_regular_user(self):
         """Returns whether a user is regular or not"""
-        return self.role == self.REGULAR
+        return self.role == self.Regular
+
 
     _is_regular_user.boolean = True
     is_regular_user = property(_is_regular_user)
 
     def _is_photographer(self):
         """Returns whether a user is photographer or not"""
-        return self.role == self.PHOTOGRAPHER
+        return self.role == self.Photographer
 
     _is_photographer.boolean = True
     is_photographer = property(_is_photographer)
@@ -160,7 +162,7 @@ class Profile(TimeStampedModelMixin):
     picture = models.URLField(blank=True)
     address = models.CharField(max_length=250,blank=True)
     town = models.CharField(max_length=250,blank=True)
-
+    description = models.CharField(max_length=250,blank=True)
     portfolio_link = models.URLField(blank=True, null=True)
     available_time = models.ManyToManyField('booking.AvailableTime')
 

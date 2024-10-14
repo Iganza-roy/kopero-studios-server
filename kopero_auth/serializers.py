@@ -30,7 +30,7 @@ class ProfileSerializer(serializers.ModelSerializer):
     """
 
     class Meta:
-        fields = "__all__"
+        fields = ['picture', 'address', 'town', 'available_time']
         model = Profile
 
 
@@ -39,14 +39,15 @@ class ReadProfileSerializer(serializers.ModelSerializer):
     Serializer class for a user profile instance
     """
     class Meta:
-        fields = "__all__"
         model = Profile
+        fields = ['picture', 'address', 'town', 'available_time']
 
 
 class UserSerializer(serializers.ModelSerializer):
     """
     Serializer class for a User instance
     """
+    profile = ProfileSerializer(read_only=True)
 
     class Meta:
         model = User
@@ -66,12 +67,15 @@ class UserSerializer(serializers.ModelSerializer):
             "is_photographer",
             "is_regular_user",
             "full_name",
+            # "picture",
+            # "description"
             # "is_ops_admin",
         )
         extra_kwargs = {"password": {"write_only": True}}
         read_only_fields = ("id", "full_name")
 
     def create(self, validated_data):
+        validated_data['role'] = 'REGULAR'
         new_user = User.objects.create(**validated_data)
         new_user.set_password(validated_data.get("password"))
         new_user.save()
@@ -170,24 +174,20 @@ class ReadUserSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "email",
-            "profile",
             "first_name",
             "last_name",
-            "full_name",
-            "username",
+            "full_name",  # Full name of the photographer
             "role",
-            "usable",
             "phone",
-            "is_active",
-            "is_deleted",
-            "is_ops_admin",
-            "is_superuser",
             "is_photographer",
-            "_is_regular_user",
-            "full_name"
+            "profile",
+            # "description",
+            # "available_time",
+            # "picture"
+
         )
+        read_only_fields = ("id", "full_name", "email")
         extra_kwargs = {"password": {"write_only": True}}
-        read_only_fields = ("id", "full_name")
 
 class CustomPasswordChangeSerializer(serializers.Serializer):
     old_password = serializers.CharField(max_length=128)
@@ -255,7 +255,7 @@ class CustomRegisterSerializer(BaseRegisterSerializer):
         Profile.objects.create(
             user=user, created_by=user
         )
-        user.is_ops_admin = True
+        # user.is_ops_admin = True
         user.save()
 
     def get_cleaned_data(self):

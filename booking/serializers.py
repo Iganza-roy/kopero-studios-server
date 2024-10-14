@@ -1,11 +1,24 @@
+from requests import Response
 from .models import AvailableTime, Booking, Review
 from rest_framework import serializers
 from kopero_auth.models import User
+from rest_framework import status
 
 class AvailableTimeSerializer(serializers.ModelSerializer):
     class Meta:
         model = AvailableTime
         fields = '__all__'
+
+    def validate(self, attrs):
+        if attrs['start_time'] >= attrs['end_time']:
+            raise serializers.ValidationError("Start time must be before end time.")
+        return attrs
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)  # Validate the data
+        available_time = serializer.save()         # Save the instance
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class ReadBookingSerializer(serializers.ModelSerializer):
@@ -43,6 +56,7 @@ class BookingSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         session_time = validated_data['session_time']
         session_time.is_booked = True
+        session_time.is_available = False
         session_time.save()
         validated_data['status'] = 'pending'
         # Create the booking
