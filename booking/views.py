@@ -1,21 +1,23 @@
 from django.shortcuts import render
 from requests import Response
+from rest_framework import generics
+from rest_framework.permissions import IsAdminUser
+from rest_framework import status
+from rest_framework.views import APIView
 from django.db.models import Q
-from booking.models import Booking
-from booking.serializers import BookingSerializer, ReadBookingSerializer
-from common.views import ImageBaseListView, BaseDetailView
+from booking.models import AvailableTime, Booking
+from booking.serializers import AvailableTimeSerializer, BookingSerializer, ReadBookingSerializer
+from common.views import ImageBaseListView, BaseDetailView, BaseListView
+from kopero_auth.models import User
+from rest_framework.permissions import IsAuthenticated
 
-class BookingListView(ImageBaseListView):
+class BookingListView(BaseListView):
+    permission_classes = [IsAuthenticated]
     model = Booking
     read_serializer_class = ReadBookingSerializer
     serializer_class = BookingSerializer
     
-    #Filtering queryset based on query parameters
     def get_queryset(self):
-        """
-        Get the queryset for this view. 
-        This must be an iterable, and may be a queryset (in which qs.query is available)
-        """
         queryset = super().get_queryset()
         q = self.request.GET.get("q", None)
         user_id = self.request.ET.get("user", None)
@@ -53,10 +55,20 @@ class BookingListView(ImageBaseListView):
         else:
             queryset = self.get_queryset()
             page = self.paginate_queryset(queryset)
-            serializer = self.get_read_serializer_class()(
-                page, many=True, context={"request": request}
-            )
-            return self.get_paginated_response(serializer.data)
+            if page is not None:
+                serializer = self.get_read_serializer_class()(page, many=True, context={"request": request})
+                return self.get_paginated_response(serializer.data)  # Return paginated response
+
+            serializer = self.get_read_serializer_class()(queryset, many=True, context={"request": request})
+            return Response(serializer.data)  # Fallback for when pagination is not used
+    
+    def delete(self, request, *args, **kwargs):
+        booking = self.get_object()  # Get the specific booking instance
+        if booking.is_booked:
+            return Response({"detail": "This booking is already confirmed and cannot be deleted."}, status=status.HTTP_400_BAD_REQUEST)
+
+        booking.delete()  # Delete the booking if allowed
+        return Response({"detail": "Booking deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
         
 class BookingDetailView(BaseDetailView):
     model = Booking
@@ -70,4 +82,22 @@ class BookingDetailView(BaseDetailView):
         return super().delete(request, pk)
     
 
+class AvailableTimeView(APIView):
+    def get(self, request, photographer_id, date):
+        # Fetch available times for the specified photographer and date
+        available_times = AvailableTime.objects.filter(
+            photographer_id=photographer_id,
+            date=date,
+            is_available=True
+        ).values('start_time', 'end_time')
+
+        return Response(list(available_times), status=status.HTTP_200_OK)
     
+class AvailableTimeListView(generics.ListCreateAPIView):
+    queryset = AvailableTime.objects.all()
+    serializer_class = AvailableTimeSerializer
+
+# Retrieve, Update, and Destroy AvailableTime
+class AvailableTimeDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = AvailableTime.objects.all()
+    serializer_class = AvailableTimeSerializer

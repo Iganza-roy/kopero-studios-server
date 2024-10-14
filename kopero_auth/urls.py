@@ -13,6 +13,8 @@ from rest_framework_simplejwt.views import (
 # from .adapter import respond_email_verification_sent
 from dj_rest_auth.registration.views import RegisterView
 from kopero_auth.views import (
+    PhotographerDetailView,
+    PhotographersListView,
     UsersListView,
     UserDetailView,
     RegisterNonAdminUSerView,
@@ -41,4 +43,6 @@ urlpatterns = [
     path("users/", UsersListView.as_view(), name="users"),
     path("users/<uuid:pk>/", UserDetailView.as_view(), name="user_details"),
     path("users/details/", UserDetailView.as_view(), name="own_details"),
+    path("photographers/", PhotographersListView.as_view(), name="photographers_list"),
+    path("photographers/<uuid:pk>/", PhotographerDetailView.as_view(), name="photographers_list")
 ]
