@@ -1,15 +1,15 @@
 from django.shortcuts import render
-from rest_framework import status
+from rest_framework import status, generics
 from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
-from rest_framework.generics import GenericAPIView
+from rest_framework.generics import GenericAPIView, RetrieveUpdateAPIView
 from rest_framework.decorators import api_view
 from rest_framework.permissions import IsAuthenticated
 from dj_rest_auth.registration.views import VerifyEmailView, RegisterView
 from dj_rest_auth.views import LoginView
 # from dj_rest_auth.app_settings import create_token
 from kopero_auth.serializers import (
-    ReadUserSerializer, UserSerializer, RegisterNonAdminUserSerializer
+    ProfileSerializer, ReadUserSerializer, UserProfileSerializer, UserSerializer, RegisterNonAdminUserSerializer
 )
 from common.jwt import get_jwt
 from datetime import timezone, datetime, timezone as dt_timezone
@@ -169,6 +169,37 @@ class PhotographerDetailView(GenericAPIView):
         photographer.is_active = False
         photographer.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
+    
+class ProfileListView(GenericAPIView):
+    """
+    List view for user profiles
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = ProfileSerializer
+
+    def get_queryset(self):
+        return Profile.objects.filter(user__is_active=True).order_by('id')
+
+    def get(self, request):
+        queryset = self.get_queryset()
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.serializer_class(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        serializer = self.serializer_class(queryset, many=True)
+        return Response(serializer.data)
+
+
+class ProfileDetailView(generics.RetrieveUpdateAPIView):
+    """
+    Detail view for a specific user profile
+    """
+    queryset = User.objects.all()
+    serializer_class = UserProfileSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'id'
+    lookup_url_kwarg = 'user_id'
+
 
 
 @api_view(["GET"])

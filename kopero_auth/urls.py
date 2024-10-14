@@ -15,6 +15,8 @@ from dj_rest_auth.registration.views import RegisterView
 from kopero_auth.views import (
     PhotographerDetailView,
     PhotographersListView,
+    ProfileDetailView,
+    ProfileListView,
     UsersListView,
     UserDetailView,
     RegisterNonAdminUSerView,
@@ -44,5 +46,7 @@ urlpatterns = [
     path("users/<uuid:pk>/", UserDetailView.as_view(), name="user_details"),
     path("users/details/", UserDetailView.as_view(), name="own_details"),
     path("photographers/", PhotographersListView.as_view(), name="photographers_list"),
-    path("photographers/<uuid:pk>/", PhotographerDetailView.as_view(), name="photographers_list")
+    path("photographers/<uuid:pk>/", PhotographerDetailView.as_view(), name="photographers_list"),
+    path("profile/", ProfileListView.as_view(), name="profile"),
+    path("profile/<uuid:user_id>/", ProfileDetailView.as_view(), name="profile_details")
 ]
