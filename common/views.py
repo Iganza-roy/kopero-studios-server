@@ -21,13 +21,24 @@ class BaseListView(GenericAPIView):
             return self.read_serializer_class
         return self.serializer_class
 
+    # Start with filtering for non-deleted records, if applicable
+    model = None
+    filter_object = Q()  # Initialize with an empty Q object
+    read_serializer_class = None
+
+    def get_read_serializer_class(self):
+        if self.read_serializer_class is not None:
+            return self.read_serializer_class
+        return self.serializer_class
+
     def get_queryset(self):
+        if not self.model:
+            raise AssertionError(f"{self.__class__.__name__} should either include a `model` attribute or override the `get_queryset` method.")
+        
         if hasattr(self.model, "is_deleted"):
-            self.filter_object = Q(is_deleted=False)
-            queryset = self.model.objects.filter(self.filter_object)
-        else:
-            queryset = self.model.objects.filter(self.filter_object)
-        return queryset
+            self.filter_object &= Q(is_deleted=False)
+
+        return self.model.objects.filter(self.filter_object)
 
     def get(self, request):
         all_status = request.GET.get("all", None)
