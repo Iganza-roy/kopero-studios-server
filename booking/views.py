@@ -1,3 +1,4 @@
+from datetime import date
 from django.shortcuts import render
 from requests import Response
 from rest_framework import generics
@@ -83,25 +84,41 @@ class BookingDetailView(BaseDetailView):
     def delete(self, request, pk):
         return super().delete(request, pk)
 
-class AvailableTimeView(APIView):
-    def get(self, request, photographer_id, date):
-        # Fetch available times for the specified photographer and date
-        available_times = AvailableTime.objects.filter(
-            photographer_id=photographer_id,
-            date=date,
-            is_available=True
-        ).values('start_time', 'end_time')
+# class AvailableTimeView(APIView):
+#     def get(self, request, photographer_id, date):
+#         # Fetch available times for the specified photographer and date
+#         available_times = AvailableTime.objects.filter(
+#             photographer_id=photographer_id,
+#             date=date,
+#             is_available=True
+#         ).values('start_time', 'end_time')
 
-        return Response(list(available_times), status=status.HTTP_200_OK)
+#         return Response(list(available_times), status=status.HTTP_200_OK)
 
 class AvailableTimeListView(generics.ListCreateAPIView):
     queryset = AvailableTime.objects.all()
     serializer_class = AvailableTimeSerializer
 
-# Retrieve, Update, and Destroy AvailableTime
-class AvailableTimeDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = AvailableTime.objects.all()
+    def perform_create(self, serializer):
+        photographer_id = self.kwargs['photographer_id']
+        serializer.save(photographer_id=photographer_id)
+
+
+class AvailableTimeDetailView(generics.RetrieveAPIView):
     serializer_class = AvailableTimeSerializer
+
+    def get_queryset(self):
+        photographer_id = self.kwargs['photographer_id']
+        date_str = self.request.query_params.get('date')
+
+        if date_str:
+            return AvailableTime.objects.filter(
+                photographer_id=photographer_id,
+                date=date_str,
+                is_available=True
+            )
+        return AvailableTime.objects.none()
+
 
 class PhotographerAvailabilityView(APIView):
     def get(self, request, photographer_id):

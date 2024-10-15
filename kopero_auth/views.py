@@ -114,7 +114,7 @@ class PhotographersListView(GenericAPIView):
     """
     permission_classes = [IsAuthenticated]
     model = User
-    serializer_class = LeanUserSerializer
+    serializer_class = ReadUserSerializer
 
     def get_queryset(self):
         return self.model.objects.filter(role__icontains='photographer', is_deleted=False)
@@ -132,7 +132,7 @@ class PhotographerDetailView(GenericAPIView):
     """
     permission_classes = [IsAuthenticated]
     model = User
-    serializer_class = UserSerializer
+    serializer_class = LeanUserSerializer
 
     def get_object(self, pk):
         # No need to cast pk to UUID manually, let Django handle it

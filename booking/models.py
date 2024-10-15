@@ -1,3 +1,4 @@
+import uuid
 from django.conf import settings
 from django.db import models
 from django.forms import ValidationError
@@ -17,8 +18,6 @@ class AvailableTime(TimeStampedModelMixin, FlaggedModelMixin):
     is_available = models.BooleanField(default=True)
     time_slot = models.CharField(max_length=50, blank=True)
 
-    def __str__(self):
-        return f"{self.photographer.full_name} - {self.service.name} on {self.date} from {self.start_time} to {self.end_time}"
     
     def save(self, *args, **kwargs):
         self.time_slot = f"{self.start_time.strftime('%I:%M %p')} - {self.end_time.strftime('%I:%M %p')}"
@@ -33,12 +32,6 @@ class AvailableTime(TimeStampedModelMixin, FlaggedModelMixin):
             raise ValidationError("Start time must be before end time.")
         if not self.is_available:
             raise ValidationError("The selected time slot is not available.")
-
-    def __str__(self):
-        return f"{self.photographer.full_name} - {self.service.name} on {self.date} from {self.start_time} to {self.end_time}"
-
-    class Meta:
-        unique_together = ('service', 'photographer', 'date', 'start_time', 'end_time')
 
 
 
@@ -55,6 +48,9 @@ class Booking(TimeStampedModelMixin, FlaggedModelMixin):
         ('canceled', 'Canceled'),
     ]
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+
+    def generate_booking_number(self):
+        return str(uuid.uuid4())[:5]
 
     def save(self, *args, **kwargs):
         if not self.booking_number:

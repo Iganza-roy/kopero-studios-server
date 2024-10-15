@@ -1,4 +1,5 @@
 from rest_framework import serializers,  exceptions
+from booking.serializers import AvailableTimeSerializer
 from kopero_auth.models import User, Profile
 from dj_rest_auth.serializers import PasswordResetSerializer
 from django.utils.translation import gettext_lazy as _
@@ -30,11 +31,11 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     """
     username = serializers.CharField(source='user.username', read_only=True)
-    picture = serializers.ImageField(source='user.picture', required=False)
+    # picture = serializers.ImageField(source='user.picture', required=False)
     user = serializers.UUIDField(source='user.id', read_only=True)
     class Meta:
         model = Profile
-        fields = ['username', 'picture', 'user', 'available_time', 'address', 'town', 'description', 'portfolio_link']
+        fields = ['username', 'user', 'available_time', 'address', 'town', 'description', 'portfolio_link']
         extra_kwargs = {
             'address': {'required': False},
             'town': {'required': False},
@@ -43,13 +44,19 @@ class ProfileSerializer(serializers.ModelSerializer):
             
         }
 
+
+class UpdateProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Profile
+        fields = ['address', 'town', 'description', 'portfolio_link']
+
+
 class UserProfileSerializer(serializers.ModelSerializer):
-    profile = ProfileSerializer(read_only=True)
-    description = serializers.CharField(source='profile.description', read_only=True)
+    profile = UpdateProfileSerializer()  # Allow profile to be updated
 
     class Meta:
         model = User
-        fields = ['id', 'picture', 'email', 'first_name', 'last_name', 'description', 'profile']
+        fields = ['id', 'picture', 'email', 'first_name', 'last_name', 'profile']
         extra_kwargs = {
             'picture': {'required': False},
             'email': {'required': False},
@@ -61,33 +68,40 @@ class UserProfileSerializer(serializers.ModelSerializer):
         profile_data = validated_data.pop('profile', {})
         profile = instance.profile
 
+        # Update user fields
         instance.email = validated_data.get('email', instance.email)
         instance.first_name = validated_data.get('first_name', instance.first_name)
         instance.last_name = validated_data.get('last_name', instance.last_name)
         instance.picture = validated_data.get('picture', instance.picture)
         instance.save()
 
-        if 'photographer' in instance.groups.values_list('name', flat=True):
-            profile.address = profile_data.get('address', profile.address)
-            profile.town = profile_data.get('town', profile.town)
-            profile.description = profile_data.get('description', profile.description)
-            profile.portfolio_link = profile_data.get('portfolio_link', profile.portfolio_link)
-        else:
-            profile.address = profile_data.get('address', profile.address)
-            profile.town = profile_data.get('town', profile.town)
+        # Update profile fields
+        profile.address = profile_data.get('address', profile.address)
+        profile.town = profile_data.get('town', profile.town)
 
-        if 'picture' in profile_data:
-            profile.picture = profile_data['picture']
+        user_roles = instance.groups.values_list('name', flat=True)
+        print(f"User roles: {user_roles}")
+        # Check if the user is a photographer before updating the description
+        if instance.role == 'photographer':
+            profile.description = profile_data.get('description', profile.description)
+
+        # Handle other fields as needed
+        profile.portfolio_link = profile_data.get('portfolio_link', profile.portfolio_link)
+
+        # Save profile
         profile.save()
         return instance
+
+
 
 class ReadProfileSerializer(serializers.ModelSerializer):
     """
     Serializer class for a user profile instance
     """
+    profile = ProfileSerializer(read_only=True)
     class Meta:
         model = Profile
-        fields = ['address', 'town', 'available_time']
+        fields = ['address', 'town', 'profile', 'description']
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -112,11 +126,17 @@ class UserSerializer(serializers.ModelSerializer):
             "is_active",
             "full_name",
             "picture",
-            "description"
-            # "is_ops_admin",
+            # "description"
         )
         extra_kwargs = {"password": {"write_only": True}}
         read_only_fields = ("id", "full_name")
+
+    # def get_available_times(self, obj):
+    #     # Fetch available_times related to the user and return the time_slot values
+    #     available_times = obj.available_times.all()
+    #     if available_times.exists():
+    #         return [available_time.time_slot for available_time in available_times]
+    #     return None
 
     def create(self, validated_data):
         validated_data['role'] = 'REGULAR'
@@ -213,7 +233,7 @@ class LeanUserSerializer(serializers.ModelSerializer):
     """
     user = UserSerializer(read_only=True)
     description = serializers.CharField(source='profile.description', read_only=True)
-    available_time = serializers.CharField(source='profile.available_time', read_only=True)
+    available_time = serializers.SerializerMethodField() # Get the available time slots for the user
     average_rating = serializers.FloatField(source='review.average_rating', read_only=True)
 
     class Meta:
@@ -234,12 +254,40 @@ class LeanUserSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "full_name", "email")
         extra_kwargs = {"password": {"write_only": True}}
     
+    class LeanUserSerializer(serializers.ModelSerializer):
+        description = serializers.CharField(source='profile.description', read_only=True)
+        available_dates = serializers.SerializerMethodField()  # Get available dates for the user
+        average_rating = serializers.FloatField(source='review.average_rating', read_only=True)
+
+        class Meta:
+            model = User
+            fields = [
+                "id",
+                "email",
+                "full_name",
+                "role",
+                "phone",
+                "description",
+                "available_dates",  # Add available dates
+                "picture",
+                "average_rating"
+            ]
+            read_only_fields = ("id", "full_name", "email")
+
+        def get_available_dates(self, obj):
+            """Retrieve unique available dates for the photographer."""
+            available_dates = obj.available_times.values_list('date', flat=True).distinct()
+            return [date.strftime("%Y-%m-%d") for date in available_dates] 
+    
 
 class ReadUserSerializer(serializers.ModelSerializer):
     """
     Serializer class for a User instance
     """
     profile = ReadProfileSerializer(read_only=True)
+    # description = serializers.CharField(source='profile.description', read_only=True)
+    # user = UserSerializer(read_only=True)
+    average_rating = serializers.FloatField(source='review.average_rating', read_only=True)
 
     class Meta:
         model = User
@@ -250,12 +298,10 @@ class ReadUserSerializer(serializers.ModelSerializer):
             "last_name",
             "full_name",  # Full name of the photographer
             "role",
+            "average_rating",
             "phone",
-            "is_photographer",
             "profile",
-            # "description",
-            # "available_time",
-            # "picture"
+            "picture"
 
         )
         read_only_fields = ("id", "full_name", "email")

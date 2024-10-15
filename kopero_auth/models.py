@@ -143,9 +143,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     class Meta:
         db_table = "users"
         ordering = ["-date_joined"]
-        constraints = [
-            models.UniqueConstraint(fields=['username', 'email'], name='unique_username_email')
-        ]
 
 class Profile(TimeStampedModelMixin):
     """

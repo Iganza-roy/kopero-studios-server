@@ -7,18 +7,33 @@ from rest_framework import status
 class AvailableTimeSerializer(serializers.ModelSerializer):
     class Meta:
         model = AvailableTime
-        fields = '__all__'
+        fields = ['id', 'service', 'date', 'start_time', 'end_time', 'time_slot']
 
     def validate(self, attrs):
         if attrs['start_time'] >= attrs['end_time']:
             raise serializers.ValidationError("Start time must be before end time.")
         return attrs
 
-    def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)  # Validate the data
-        available_time = serializer.save()         # Save the instance
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    def create(self, validated_data):
+        photographer_id = validated_data.pop('photographer_id', None)
+        service = validated_data.get('service')
+        date = validated_data.get('date')
+        start_time = validated_data.get('start_time')
+        end_time = validated_data.get('end_time')
+
+        # Check for existing time slot
+        if AvailableTime.objects.filter(
+            photographer_id=photographer_id,
+            service=service,
+            date=date,
+            start_time=start_time,
+            end_time=end_time
+        ).exists():
+            raise serializers.ValidationError("This time slot is already created.")
+
+        # Create the available time instance
+        available_time = AvailableTime.objects.create(**validated_data, photographer_id=photographer_id)
+        return available_time
 
 
 class ReadBookingSerializer(serializers.ModelSerializer):
@@ -27,24 +42,27 @@ class ReadBookingSerializer(serializers.ModelSerializer):
     session_time_slot = serializers.CharField(source='session_time.time_slot', read_only=True)
     class Meta:
         model = Booking
-        fields = ['id', 'user', 'service', 'photographer', 'session_time', 'is_booked']
-        read_only_fields = ['user', 'id', 'is_booked']
+        fields = ['id', 'user', 'status', 'service_name', 'session_time_slot', 'photographer_name', 'is_booked']
+        read_only_fields = ['user', 'service', 'id', 'is_booked']
 
 
 class BookingSerializer(serializers.ModelSerializer):
     service_name = serializers.CharField(source='service.name', read_only=True)
-    photographer_name = serializers.CharField(source='photographer.full_name', read_only=True)
+    photographer_name = serializers.CharField(source='photographer.full_name', read_only=True)  # Uncommented this line
     session_time_slot = serializers.CharField(source='session_time.time_slot', read_only=True)
+
     class Meta:
         model = Booking
-        fields = ['id', 'user', 'service', 'photographer', 'session_time', 'is_booked']
+        fields = ['id', 'user', 'service', 'photographer', 'session_time', 'session_time_slot', 'is_booked', 'service_name', 'photographer_name']  # Added 'session_time_slot'
         read_only_fields = ['is_booked', 'service_name', 'photographer_name', 'session_time_slot']
 
     def validate(self, data):
         session_time = data.get('session_time')
         photographer = data.get('photographer')
 
-        if session_time and session_time.is_booked:
+        print("Session Time Photographer:", session_time.photographer)
+        print("Selected Photographer:", photographer)
+        if session_time and session_time.is_available:
             raise serializers.ValidationError("This time slot is already booked.")
 
         # Ensure the selected photographer matches the session time availability
@@ -55,7 +73,7 @@ class BookingSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         session_time = validated_data['session_time']
-        session_time.is_booked = True
+        # session_time.is_booked = True
         session_time.is_available = False
         session_time.save()
         validated_data['status'] = 'pending'
