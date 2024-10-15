@@ -9,7 +9,7 @@ from dj_rest_auth.registration.views import VerifyEmailView, RegisterView
 from dj_rest_auth.views import LoginView
 # from dj_rest_auth.app_settings import create_token
 from kopero_auth.serializers import (
-    ProfileSerializer, ReadUserSerializer, UserProfileSerializer, UserSerializer, RegisterNonAdminUserSerializer
+    LeanUserSerializer, ProfileSerializer, ReadUserSerializer, UserProfileSerializer, UserSerializer, RegisterNonAdminUserSerializer
 )
 from common.jwt import get_jwt
 from datetime import timezone, datetime, timezone as dt_timezone
@@ -114,7 +114,7 @@ class PhotographersListView(GenericAPIView):
     """
     permission_classes = [IsAuthenticated]
     model = User
-    serializer_class = UserSerializer
+    serializer_class = LeanUserSerializer
 
     def get_queryset(self):
         return self.model.objects.filter(role__icontains='photographer', is_deleted=False)

@@ -149,3 +149,13 @@ class PhotographerAvailabilityView(APIView):
 
         return Response(response_data, status=status.HTTP_200_OK)
 
+
+
+def calculate_review(booking):
+    """
+    Calculate the review for a booking
+    """
+    review = booking.review
+    if review:
+        return review.rating
+    return 0

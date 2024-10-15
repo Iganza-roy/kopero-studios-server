@@ -27,14 +27,14 @@ UserModel = get_user_model()
 class ProfileSerializer(serializers.ModelSerializer):
     """
     Serializer class for a user profile instance
-    
+
     """
     username = serializers.CharField(source='user.username', read_only=True)
     picture = serializers.ImageField(source='user.picture', required=False)
     user = serializers.UUIDField(source='user.id', read_only=True)
     class Meta:
         model = Profile
-        fields = ['username', 'picture', 'user', 'address', 'town', 'description', 'portfolio_link']
+        fields = ['username', 'picture', 'user', 'available_time', 'address', 'town', 'description', 'portfolio_link']
         extra_kwargs = {
             'address': {'required': False},
             'town': {'required': False},
@@ -44,11 +44,12 @@ class ProfileSerializer(serializers.ModelSerializer):
         }
 
 class UserProfileSerializer(serializers.ModelSerializer):
-    profile = ProfileSerializer()
+    profile = ProfileSerializer(read_only=True)
+    description = serializers.CharField(source='profile.description', read_only=True)
 
     class Meta:
         model = User
-        fields = ['id', 'picture', 'email', 'first_name', 'last_name', 'profile']
+        fields = ['id', 'picture', 'email', 'first_name', 'last_name', 'description', 'profile']
         extra_kwargs = {
             'picture': {'required': False},
             'email': {'required': False},
@@ -109,12 +110,9 @@ class UserSerializer(serializers.ModelSerializer):
             "role",
             "phone",
             "is_active",
-            "is_deleted",
-            "is_photographer",
-            "is_regular_user",
             "full_name",
-            # "picture",
-            # "description"
+            "picture",
+            "description"
             # "is_ops_admin",
         )
         extra_kwargs = {"password": {"write_only": True}}
@@ -208,6 +206,34 @@ class BaseRegisterSerializer(serializers.Serializer):
         self.custom_signup(request, user)
         setup_user_email(request, user, [])
         return user
+    
+class LeanUserSerializer(serializers.ModelSerializer):
+    """
+    Serializer class for a User instance
+    """
+    user = UserSerializer(read_only=True)
+    description = serializers.CharField(source='profile.description', read_only=True)
+    available_time = serializers.CharField(source='profile.available_time', read_only=True)
+    average_rating = serializers.FloatField(source='review.average_rating', read_only=True)
+
+    class Meta:
+        model = User
+        fields = [
+            "user",
+            "id",
+            "email",
+            "full_name",
+            "role",
+            "phone",
+            "description",
+            "available_time",
+            "picture",
+            "average_rating"
+
+        ]
+        read_only_fields = ("id", "full_name", "email")
+        extra_kwargs = {"password": {"write_only": True}}
+    
 
 class ReadUserSerializer(serializers.ModelSerializer):
     """
