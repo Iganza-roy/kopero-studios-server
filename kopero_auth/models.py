@@ -45,7 +45,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     phone = models.CharField(max_length=20, null=True, blank=True)
     is_ops_admin = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
-    picture = models.ImageField(blank=True)
+    picture = models.ImageField(upload_to='profile_pictures/', null=True, blank=True)
     deleted_at = models.DateTimeField(null=True)
     modified_by = models.ForeignKey(
         "User",

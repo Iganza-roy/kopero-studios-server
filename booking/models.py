@@ -40,10 +40,6 @@ class AvailableTime(TimeStampedModelMixin, FlaggedModelMixin):
     class Meta:
         unique_together = ('service', 'photographer', 'date', 'start_time', 'end_time')
 
-    def clean_time(self):
-        # Ensure start_time is before end_time
-        if self.start_time >= self.end_time:
-            raise ValidationError("Start time must be before end time.")
 
 
 class Booking(TimeStampedModelMixin, FlaggedModelMixin):
@@ -73,6 +69,7 @@ class Review(TimeStampedModelMixin, FlaggedModelMixin):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='user_reviews')
     photographer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='photographer_reviews')
     rating = models.PositiveIntegerField()
+    average_rating = models.FloatField()
 
     def __str__(self):
         return f"Review by {self.user.username} for photographer {self.photographer.full_name}"
