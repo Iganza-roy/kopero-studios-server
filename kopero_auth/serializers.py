@@ -296,12 +296,11 @@ class ReadUserSerializer(serializers.ModelSerializer):
             "email",
             "first_name",
             "last_name",
-            "full_name",  # Full name of the photographer
+            "full_name",
             "role",
             "average_rating",
             "phone",
-            "profile",
-            "picture"
+            "profile"
 
         )
         read_only_fields = ("id", "full_name", "email")
