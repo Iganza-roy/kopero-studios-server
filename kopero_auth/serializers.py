@@ -49,7 +49,7 @@ class ProfileSerializer(serializers.ModelSerializer):
 class UpdateProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
-        fields = ['address', 'town', 'description', 'portfolio_link']
+        fields = ['address', 'town', 'description', 'picture', 'portfolio_link']
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -57,9 +57,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'email', 'first_name', 'last_name', 'profile']
+        fields = ['id', 'email','first_name', 'last_name', 'profile']
         extra_kwargs = {
-            'picture': {'required': False},
+            # 'picture': {'required': False},
             'email': {'required': False},
             'first_name': {'required': False},
             'last_name': {'required': False},
@@ -73,6 +73,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         instance.email = validated_data.get('email', instance.email)
         instance.first_name = validated_data.get('first_name', instance.first_name)
         instance.last_name = validated_data.get('last_name', instance.last_name)
+        instance.phone = validated_data.get('phone', instance.phone)
         instance.save()
 
         # Update profile fields
