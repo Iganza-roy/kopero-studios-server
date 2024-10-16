@@ -103,7 +103,7 @@ class ReadProfileSerializer(serializers.ModelSerializer):
     profile = ProfileSerializer(read_only=True)
     class Meta:
         model = Profile
-        fields = ['address', 'town', 'profile', 'description']
+        fields = ['address', 'picture','town', 'profile', 'description']
 
 
 class UserSerializer(serializers.ModelSerializer):
