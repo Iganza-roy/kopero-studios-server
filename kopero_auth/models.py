@@ -45,7 +45,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     phone = models.CharField(max_length=20, null=True, blank=True)
     is_ops_admin = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
-    picture = models.ImageField(upload_to='profile_pictures/', null=True, blank=True)
     deleted_at = models.DateTimeField(null=True)
     modified_by = models.ForeignKey(
         "User",
@@ -159,6 +158,7 @@ class Profile(TimeStampedModelMixin):
     address = models.CharField(max_length=250,blank=True)
     town = models.CharField(max_length=250,blank=True)
     description = models.CharField(max_length=250,blank=True)
+    picture = models.ImageField(upload_to='profile_pictures/', null=True, blank=True)
     portfolio_link = models.URLField(blank=True, null=True)
     available_time = models.ManyToManyField('booking.AvailableTime')
 
