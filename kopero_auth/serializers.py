@@ -31,11 +31,12 @@ class ProfileSerializer(serializers.ModelSerializer):
 
     """
     username = serializers.CharField(source='user.username', read_only=True)
+    phone = serializers.CharField(source='user.phone')
     # picture = serializers.ImageField(source='user.picture', required=False)
     user = serializers.UUIDField(source='user.id', read_only=True)
     class Meta:
         model = Profile
-        fields = ['username', 'user', 'available_time', 'address', 'town', 'description', 'portfolio_link']
+        fields = ['username', 'user', 'phone', 'available_time', 'address', 'picture', 'town', 'description', 'portfolio_link']
         extra_kwargs = {
             'address': {'required': False},
             'town': {'required': False},
@@ -56,7 +57,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'picture', 'email', 'first_name', 'last_name', 'profile']
+        fields = ['id', 'email', 'first_name', 'last_name', 'profile']
         extra_kwargs = {
             'picture': {'required': False},
             'email': {'required': False},
@@ -72,12 +73,12 @@ class UserProfileSerializer(serializers.ModelSerializer):
         instance.email = validated_data.get('email', instance.email)
         instance.first_name = validated_data.get('first_name', instance.first_name)
         instance.last_name = validated_data.get('last_name', instance.last_name)
-        instance.picture = validated_data.get('picture', instance.picture)
         instance.save()
 
         # Update profile fields
         profile.address = profile_data.get('address', profile.address)
         profile.town = profile_data.get('town', profile.town)
+        profile.picture = validated_data.get('picture', profile.picture)
 
         user_roles = instance.groups.values_list('name', flat=True)
         print(f"User roles: {user_roles}")
@@ -125,7 +126,7 @@ class UserSerializer(serializers.ModelSerializer):
             "phone",
             "is_active",
             "full_name",
-            "picture",
+            # "picture",
             # "description"
         )
         extra_kwargs = {"password": {"write_only": True}}
@@ -294,6 +295,7 @@ class ReadUserSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "email",
+            "username",
             "first_name",
             "last_name",
             "full_name",
