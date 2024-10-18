@@ -1,4 +1,5 @@
 from rest_framework import serializers,  exceptions
+from booking.models import Review
 from booking.serializers import AvailableTimeSerializer
 from kopero_auth.models import User, Profile
 from dj_rest_auth.serializers import PasswordResetSerializer
@@ -11,7 +12,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.settings import api_settings
 from django.contrib.auth.forms import SetPasswordForm
 from calendar import timegm
-from django.db.models import Q
+from django.db.models import Q, Avg
 
 try:
     from allauth.account import app_settings as allauth_settings
@@ -111,7 +112,6 @@ class UserSerializer(serializers.ModelSerializer):
     Serializer class for a User instance
     """
     profile = ProfileSerializer(read_only=True)
-
     class Meta:
         model = User
         fields = (
@@ -127,11 +127,13 @@ class UserSerializer(serializers.ModelSerializer):
             "phone",
             "is_active",
             "full_name",
+            "average_rating"
             # "picture",
             # "description"
         )
         extra_kwargs = {"password": {"write_only": True}}
         read_only_fields = ("id", "full_name")
+
 
     # def get_available_times(self, obj):
     #     # Fetch available_times related to the user and return the time_slot values
@@ -236,7 +238,6 @@ class LeanUserSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     description = serializers.CharField(source='profile.description', read_only=True)
     available_time = serializers.SerializerMethodField() # Get the available time slots for the user
-    average_rating = serializers.FloatField(source='review.average_rating', read_only=True)
 
     class Meta:
         model = User
@@ -250,7 +251,6 @@ class LeanUserSerializer(serializers.ModelSerializer):
             "description",
             "available_time",
             "picture",
-            "average_rating"
 
         ]
         read_only_fields = ("id", "full_name", "email")
@@ -258,8 +258,7 @@ class LeanUserSerializer(serializers.ModelSerializer):
     
     class LeanUserSerializer(serializers.ModelSerializer):
         description = serializers.CharField(source='profile.description', read_only=True)
-        available_dates = serializers.SerializerMethodField()  # Get available dates for the user
-        average_rating = serializers.FloatField(source='review.average_rating', read_only=True)
+        available_dates = serializers.SerializerMethodField()  # Get available dates for the userge
 
         class Meta:
             model = User
@@ -271,8 +270,7 @@ class LeanUserSerializer(serializers.ModelSerializer):
                 "phone",
                 "description",
                 "available_dates",  # Add available dates
-                "picture",
-                "average_rating"
+                "picture"
             ]
             read_only_fields = ("id", "full_name", "email")
 
@@ -289,25 +287,31 @@ class ReadUserSerializer(serializers.ModelSerializer):
     profile = ReadProfileSerializer(read_only=True)
     # description = serializers.CharField(source='profile.description', read_only=True)
     # user = UserSerializer(read_only=True)
-    average_rating = serializers.FloatField(source='review.average_rating', read_only=True)
+    average_rating = serializers.SerializerMethodField()
+
 
     class Meta:
         model = User
         fields = (
             "id",
-            "email",
             "username",
+            "email",
             "first_name",
             "last_name",
             "full_name",
             "role",
-            "average_rating",
             "phone",
-            "profile"
+            "average_rating",
+            "profile",
 
         )
         read_only_fields = ("id", "full_name", "email")
         extra_kwargs = {"password": {"write_only": True}}
+
+    def get_average_rating(self, obj):
+        avg_rating = Review.objects.filter(photographer=obj).aggregate(Avg('rating'))['rating__avg']
+        return avg_rating if avg_rating is not None else 0.0
+
 
 class CustomPasswordChangeSerializer(serializers.Serializer):
     old_password = serializers.CharField(max_length=128)

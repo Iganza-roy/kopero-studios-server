@@ -65,13 +65,12 @@ class Review(TimeStampedModelMixin, FlaggedModelMixin):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='user_reviews')
     photographer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='photographer_reviews')
     rating = models.PositiveIntegerField()
-    average_rating = models.FloatField()
 
     def __str__(self):
         return f"Review by {self.user.username} for photographer {self.photographer.full_name}"
 
     class Meta:
-        unique_together = ('booking', 'user', 'photographer')
+        unique_together = ('booking', 'user')
 
     def clean(self):
         if self.rating < 1 or self.rating > 5:

@@ -6,8 +6,8 @@ from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework import status
 from rest_framework.views import APIView
 from django.db.models import Q
-from booking.models import AvailableTime, Booking
-from booking.serializers import AvailableTimeSerializer, BookingSerializer, ReadBookingSerializer
+from booking.models import AvailableTime, Booking, Review
+from booking.serializers import AvailableTimeSerializer, BookingSerializer, ReadBookingSerializer, ReviewSerializer
 from common.views import ImageBaseListView, BaseDetailView, BaseListView
 from kopero_auth.models import User
 
@@ -19,8 +19,16 @@ class BookingListView(BaseListView):
     
     def get_queryset(self):
         queryset = super().get_queryset()
+        user = self.request.user  # Get the logged-in user
+        
+        # Filter bookings based on user role
+        if user.is_photographer:
+            queryset = queryset.filter(photographer=user)  # Show bookings where the user is the assigned photographer
+        else:
+            queryset = queryset.filter(user=user)  # Show bookings where the user is the one who made the booking
+        
+        # Further filtering based on query parameters (optional)
         q = self.request.GET.get("q", None)
-        user = self.request.GET.get("user", None)
         session_time = self.request.GET.get("session_time", None)
         service = self.request.GET.get("service_id", None)
         photographer = self.request.GET.get("photographer", None)
@@ -32,20 +40,15 @@ class BookingListView(BaseListView):
             kwargs_ors = Q(name__icontains=q)
         if service is not None:
             kwargs['service_id'] = service
-        if user is not None:
-            kwargs['user_id'] = user
-        if photographer is not None:
-            kwargs['photographer_id'] = photographer
         if session_time is not None:
             kwargs['session_time_id'] = session_time
+        if photographer is not None and user.is_photographer:  # Restrict filtering by photographer for photographers only
+            kwargs['photographer_id'] = photographer
 
         if kwargs_ors is not None:
-            self.filter_object &= kwargs_ors  # Apply OR conditions
+            queryset = queryset.filter(kwargs_ors)
         if kwargs:
-            self.filter_object &= Q(**kwargs)  # Apply AND conditions for specific fields
-
-        if self.filter_object:
-            queryset = queryset.filter(self.filter_object)
+            queryset = queryset.filter(**kwargs)
 
         return queryset
 
@@ -60,29 +63,87 @@ class BookingListView(BaseListView):
             page = self.paginate_queryset(queryset)
             if page is not None:
                 serializer = self.get_read_serializer_class()(page, many=True, context={"request": request})
-                return self.get_paginated_response(serializer.data)  # Return paginated response
+                return self.get_paginated_response(serializer.data)
 
             serializer = self.get_read_serializer_class()(queryset, many=True, context={"request": request})
-            return Response(serializer.data)  # Fallback for when pagination is not used
+            return Response(serializer.data)
 
     def delete(self, request, *args, **kwargs):
-        booking = self.get_object()  # Get the specific booking instance
+        booking = self.get_object()
         if booking.is_booked:
             return Response({"detail": "This booking is already confirmed and cannot be deleted."}, status=status.HTTP_400_BAD_REQUEST)
 
-        booking.delete()  # Delete the booking if allowed
+        booking.delete()
         return Response({"detail": "Booking deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
 
 class BookingDetailView(BaseDetailView):
+    permission_classes = [IsAuthenticated]
     model = Booking
     read_serializer_class = ReadBookingSerializer
     serializer_class = BookingSerializer
 
     def get(self, request, pk):
-        return super().get(request, pk)
-    
+        booking = self.get_object()
+        
+        # Check if the user is the one who made the booking or if they are the photographer
+        if request.user != booking.user and request.user != booking.photographer:
+            return Response({"detail": "You do not have permission to view this booking."}, status=status.HTTP_403_FORBIDDEN)
+        
+        # If the booking is marked as served and the user hasn't reviewed yet, provide the option to review
+        reviewed = Review.objects.filter(booking=booking, user=request.user).exists()
+        
+        if booking.status == 'served' and not reviewed:
+            review_message = "Submit a review."
+        else:
+            review_message = None
+        
+        # Return booking details along with review option
+        serializer = self.read_serializer_class(booking, context={"request": request})
+        response_data = serializer.data
+        if review_message:
+            response_data['review_message'] = review_message
+        
+        return Response(response_data, status=status.HTTP_200_OK)
+
     def delete(self, request, pk):
-        return super().delete(request, pk)
+        booking = self.get_object()
+
+        # Only allow deletion if the booking is not confirmed or served
+        if booking.is_booked or booking.status == 'served':
+            return Response({"detail": "This booking cannot be deleted as it is served."}, status=status.HTTP_400_BAD_REQUEST)
+
+        booking.delete()
+        return Response({"detail": "Booking deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+
+    def post(self, request, pk):
+        """Handle submitting a review after the booking is served."""
+        booking = self.get_object()
+
+        # Ensure the booking is served and the user hasn't reviewed yet
+        if booking.status != 'served':
+            return Response({"detail": "You cannot review a booking until served."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        review_exists = Review.objects.filter(booking=booking, user=request.user).exists()
+        if review_exists:
+            return Response({"detail": "You have already submitted a review for this booking."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Ensure the photographer cannot review themselves
+        if request.user == booking.photographer:
+            return Response({"detail": "Photographers cannot review themselves."}, status=status.HTTP_403_FORBIDDEN)
+        
+        # Create a new review
+        review_data = {
+            'booking': booking.id,
+            'user': request.user.id,
+            'photographer': booking.photographer.id,
+            'rating': request.data.get('rating'),
+        }
+        review_serializer = ReviewSerializer(data=review_data)
+        review_serializer.is_valid(raise_exception=True)
+        review_serializer.save()
+
+        return Response({"detail": "Review submitted successfully."}, status=status.HTTP_201_CREATED)
+
 
 # class AvailableTimeView(APIView):
 #     def get(self, request, photographer_id, date):
@@ -166,13 +227,22 @@ class PhotographerAvailabilityView(APIView):
 
         return Response(response_data, status=status.HTTP_200_OK)
 
+class ReviewListView(BaseListView):
+    model = Review
+    serializer_class = ReviewSerializer
+    permission_classes = [IsAuthenticated]
 
 
-def calculate_review(booking):
-    """
-    Calculate the review for a booking
-    """
-    review = booking.review
-    if review:
-        return review.rating
-    return 0
+    def get_queryset(self):
+        # Ensure the user can only see their own bookings to review
+        user = self.request.user
+        return Booking.objects.filter(user=user, status='served')
+
+    def perform_create(self, serializer):
+        booking_id = self.request.data.get('booking')
+        booking = Booking.objects.get(id=booking_id)
+
+        if booking.user != self.request.user:
+            return Response({"detail": "You cannot review this booking."}, status=403)
+
+        serializer.save(user=self.request.user, photographer=booking.photographer)

@@ -143,6 +143,8 @@ class User(AbstractBaseUser, PermissionsMixin):
         db_table = "users"
         ordering = ["-date_joined"]
 
+    
+
 class Profile(TimeStampedModelMixin):
     """
     A user profile instance - stores extra information about a user instance

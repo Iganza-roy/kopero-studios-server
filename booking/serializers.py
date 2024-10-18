@@ -59,9 +59,7 @@ class BookingSerializer(serializers.ModelSerializer):
     def validate(self, data):
         session_time = data.get('session_time')
         photographer = data.get('photographer')
-
-        print("Session Time Photographer:", session_time.photographer)
-        print("Selected Photographer:", photographer)
+        
         if session_time and session_time.is_available:
             raise serializers.ValidationError("This time slot is already booked.")
 
