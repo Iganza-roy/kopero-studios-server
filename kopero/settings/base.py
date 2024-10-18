@@ -93,7 +93,7 @@ TEMPLATES = [
     },
 ]
 
-AUTH_USER_MODEL = 'kopero_auth.User'
+AUTH_USER_MODEL = 'kopero_auth.BaseUser'
 
 
 REST_FRAMEWORK = {
