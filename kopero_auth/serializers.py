@@ -1,7 +1,5 @@
 from rest_framework import serializers,  exceptions
-from booking.models import Review
-from booking.serializers import AvailableTimeSerializer
-from kopero_auth.models import User, Profile
+from kopero_auth.models import BaseUser, CrewMember, Client
 from dj_rest_auth.serializers import PasswordResetSerializer
 from django.utils.translation import gettext_lazy as _
 from datetime import datetime
@@ -12,7 +10,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.settings import api_settings
 from django.contrib.auth.forms import SetPasswordForm
 from calendar import timegm
-from django.db.models import Q, Avg
+from django.db.models import Q
 
 try:
     from allauth.account import app_settings as allauth_settings
@@ -26,140 +24,58 @@ except ImportError:
 UserModel = get_user_model()
 
 
-class ProfileSerializer(serializers.ModelSerializer):
-    """
-    Serializer class for a user profile instance
-
-    """
-    username = serializers.CharField(source='user.username', read_only=True)
-    phone = serializers.CharField(source='user.phone')
-    # picture = serializers.ImageField(source='user.picture', required=False)
-    user = serializers.UUIDField(source='user.id', read_only=True)
+class BaseUserSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Profile
-        fields = ['username', 'user', 'phone', 'available_time', 'address', 'picture', 'town', 'description', 'portfolio_link']
-        extra_kwargs = {
-            'address': {'required': False},
-            'town': {'required': False},
-            'description': {'required': True},
-            'portfolio_link': {'required': False},
-            
-        }
+        model = BaseUser
+        fields = ['id', 'email', 'username', 'image', 'about', 'address', 'date_joined']
 
 
-class UpdateProfileSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Profile
-        fields = ['address', 'town', 'description', 'picture', 'portfolio_link']
-
-
-class UserProfileSerializer(serializers.ModelSerializer):
-    profile = UpdateProfileSerializer()  # Allow profile to be updated
-
-    class Meta:
-        model = User
-        fields = ['id', 'email','first_name', 'last_name', 'profile']
-        extra_kwargs = {
-            # 'picture': {'required': False},
-            'email': {'required': False},
-            'first_name': {'required': False},
-            'last_name': {'required': False},
-        }
-
-    def update(self, instance, validated_data):
-        profile_data = validated_data.pop('profile', {})
-        profile = instance.profile
-
-        # Update user fields
-        instance.email = validated_data.get('email', instance.email)
-        instance.first_name = validated_data.get('first_name', instance.first_name)
-        instance.last_name = validated_data.get('last_name', instance.last_name)
-        instance.phone = validated_data.get('phone', instance.phone)
-        instance.save()
-
-        # Update profile fields
-        profile.address = profile_data.get('address', profile.address)
-        profile.town = profile_data.get('town', profile.town)
-        profile.picture = validated_data.get('picture', profile.picture)
-
-        user_roles = instance.groups.values_list('name', flat=True)
-        print(f"User roles: {user_roles}")
-        # Check if the user is a photographer before updating the description
-        if instance.role == 'photographer':
-            profile.description = profile_data.get('description', profile.description)
-
-        # Handle other fields as needed
-        profile.portfolio_link = profile_data.get('portfolio_link', profile.portfolio_link)
-
-        # Save profile
-        profile.save()
-        return instance
-
-
-
-class ReadProfileSerializer(serializers.ModelSerializer):
-    """
-    Serializer class for a user profile instance
-    """
-    profile = ProfileSerializer(read_only=True)
-    class Meta:
-        model = Profile
-        fields = ['address', 'picture','town', 'profile', 'description']
-
-
-class UserSerializer(serializers.ModelSerializer):
+class UserSerializer(BaseUserSerializer):
     """
     Serializer class for a User instance
     """
-    profile = ProfileSerializer(read_only=True)
-    class Meta:
-        model = User
-        fields = (
-            "id",
-            "email",
-            "password",
-            "profile",
-            "username",
-            "first_name",
-            "last_name",
-            "full_name",
-            "role",
-            "phone",
-            "is_active",
-            "full_name",
-            "average_rating"
-            # "picture",
-            # "description"
-        )
-        extra_kwargs = {"password": {"write_only": True}}
-        read_only_fields = ("id", "full_name")
 
-
-    # def get_available_times(self, obj):
-    #     # Fetch available_times related to the user and return the time_slot values
-    #     available_times = obj.available_times.all()
-    #     if available_times.exists():
-    #         return [available_time.time_slot for available_time in available_times]
-    #     return None
+    class Meta(BaseUserSerializer.Meta):
+        model = Client
+        fields = BaseUserSerializer.Meta.fields + ['first_name', 'last_name', 'phone', 'password']
+        extra_kwargs = {
+            "password": {"write_only": True}
+        }
+        read_only_fields = ("id",)
 
     def create(self, validated_data):
-        validated_data['role'] = 'REGULAR'
-        new_user = User.objects.create(**validated_data)
+        new_user = Client.objects.create(**validated_data)
         new_user.set_password(validated_data.get("password"))
         new_user.save()
         return new_user
 
     def update(self, instance, validated_data):
-        profile = validated_data.pop("profile", None)
+        validated_data.pop('password', None)
         for field, value in validated_data.items():
             setattr(instance, field, value)
-        if profile is not None:
-            user_profile = instance.profile
-            for field, value in profile.items():
-                setattr(user_profile, field, value)
-                user_profile.save()
+
         instance.save()
         return instance
+
+class ReadUserSerializer(serializers.ModelSerializer):
+    """
+    Serializer class for a User instance
+    """
+
+    class Meta:
+        model = Client
+        fields = (
+            "id",
+            "email",
+            "first_name",
+            "last_name",
+            "full_name",
+            "phone",
+            "picture"
+
+        )
+        read_only_fields = ("id", "full_name", "email")
+        extra_kwargs = {"password": {"write_only": True}}
 
 
 def jwt_payload_handler(user):
@@ -172,10 +88,7 @@ def jwt_payload_handler(user):
         "username": user.email,
         "first_name": user.first_name,
         "last_name": user.last_name,
-        "role": user.role,
-        "is_photographer": user.is_photographer,
         # "is_ops_admin": user.is_ops_admin,
-        "is_regular_user": user.is_regular_user,
         "usable": user.usable,
         "exp": datetime.utcnow() + api_settings.JWT_EXPIRATION_DELTA,
     }
@@ -206,7 +119,7 @@ class BaseRegisterSerializer(serializers.Serializer):
 
     def validate_email(self, email):
         email = get_adapter().clean_email(email)
-        email_count = User.objects.filter(email__iexact=email).count()
+        email_count = Client.objects.filter(email__iexact=email).count()
         if email_count > 0:
             raise serializers.ValidationError(
                 _("A user is already registered with this e-mail address.")
@@ -215,7 +128,7 @@ class BaseRegisterSerializer(serializers.Serializer):
 
     def validate_username(self, username):
         username = get_adapter().clean_username(username)
-        username_count = User.objects.filter(username=username).count()
+        username_count = Client.objects.filter(username=username).count()
         if username_count > 0:
             raise serializers.ValidationError(
                 _("A user is already registered with this username.")
@@ -231,93 +144,100 @@ class BaseRegisterSerializer(serializers.Serializer):
         setup_user_email(request, user, [])
         return user
     
-class LeanUserSerializer(serializers.ModelSerializer):
+class CrewUserRegisterSerializer(serializers.ModelSerializer):
+    password1 = serializers.CharField(write_only=True)
+    password2 = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = CrewMember
+        fields = ('first_name', 'last_name', 'username', 'phone', 'email', 'password1', 'password2')
+
+    def validate_email(self, email):
+        email = get_adapter().clean_email(email)
+        email_count = CrewMember.objects.filter(email__iexact=email).count()
+        if email_count > 0:
+            raise serializers.ValidationError(_("A crew user is already registered with this e-mail address."))
+        return email
+
+    def validate_username(self, username):
+        username = get_adapter().clean_username(username)
+        username_count = CrewMember.objects.filter(username=username).count()
+        if username_count > 0:
+            raise serializers.ValidationError(_("A crew user is already registered with this username."))
+        return username
+
+    def validate(self, data):
+        if data['password1'] != data['password2']:
+            raise serializers.ValidationError(_("The two password fields didn't match."))
+        return data
+
+    def save(self, request):
+        adapter = get_adapter()
+        user = adapter.new_user(request)
+        user.set_password(self.validated_data['password1'])
+        user.save()
+        setup_user_email(request, user, [])
+        return user
+
+
+class CrewSerializer(BaseUserSerializer):
+    """
+    Serializer class for a CrewMember instance
+    """
+
+    class Meta(BaseUserSerializer.Meta):
+        model = CrewMember
+        fields = BaseUserSerializer.Meta.fields + ['description', 'session_booked', 'portfolio_link', 'category', 'password']
+        extra_kwargs = {
+            "password": {"write_only": True}
+        }
+        read_only_fields = ("id",)
+
+    def create(self, validated_data):
+        new_user = CrewMember.objects.create(**validated_data)
+        new_user.set_password(validated_data.get("password"))
+        new_user.save()
+        return new_user
+
+    def update(self, instance, validated_data):
+        validated_data.pop('password', None)
+        for field, value in validated_data.items():
+            setattr(instance, field, value)
+
+        instance.save()
+        return instance
+    
+
+class ReadCrewSerializer(serializers.ModelSerializer):
     """
     Serializer class for a User instance
     """
-    user = UserSerializer(read_only=True)
-    description = serializers.CharField(source='profile.description', read_only=True)
-    available_time = serializers.SerializerMethodField() # Get the available time slots for the user
 
     class Meta:
-        model = User
-        fields = [
-            "user",
-            "id",
-            "email",
-            "full_name",
-            "role",
-            "phone",
-            "description",
-            "available_time",
-            "picture",
-
-        ]
-        read_only_fields = ("id", "full_name", "email")
-        extra_kwargs = {"password": {"write_only": True}}
-    
-    class LeanUserSerializer(serializers.ModelSerializer):
-        description = serializers.CharField(source='profile.description', read_only=True)
-        available_dates = serializers.SerializerMethodField()  # Get available dates for the userge
-
-        class Meta:
-            model = User
-            fields = [
-                "id",
-                "email",
-                "full_name",
-                "role",
-                "phone",
-                "description",
-                "available_dates",  # Add available dates
-                "picture"
-            ]
-            read_only_fields = ("id", "full_name", "email")
-
-        def get_available_dates(self, obj):
-            """Retrieve unique available dates for the photographer."""
-            available_dates = obj.available_times.values_list('date', flat=True).distinct()
-            return [date.strftime("%Y-%m-%d") for date in available_dates] 
-    
-
-class ReadUserSerializer(serializers.ModelSerializer):
-    """
-    Serializer class for a User instance
-    """
-    profile = ReadProfileSerializer(read_only=True)
-    # description = serializers.CharField(source='profile.description', read_only=True)
-    # user = UserSerializer(read_only=True)
-    average_rating = serializers.SerializerMethodField()
-
-
-    class Meta:
-        model = User
+        model = CrewMember
         fields = (
             "id",
-            "username",
             "email",
             "first_name",
             "last_name",
             "full_name",
-            "role",
             "phone",
-            "average_rating",
-            "profile",
+            "picture",
+            "description",
+            "portfolio_link", 
+            "category",
+            "session_booked"
 
         )
         read_only_fields = ("id", "full_name", "email")
         extra_kwargs = {"password": {"write_only": True}}
-
-    def get_average_rating(self, obj):
-        avg_rating = Review.objects.filter(photographer=obj).aggregate(Avg('rating'))['rating__avg']
-        return avg_rating if avg_rating is not None else 0.0
 
 
 class CustomPasswordChangeSerializer(serializers.Serializer):
     old_password = serializers.CharField(max_length=128)
     new_password1 = serializers.CharField(max_length=128)
     new_password2 = serializers.CharField(max_length=128)
-    user_id = serializers.PrimaryKeyRelatedField(required=False, queryset=User.objects.all())
+    user_id = serializers.PrimaryKeyRelatedField(required=False, queryset=Client.objects.all())
 
     set_password_form_class = SetPasswordForm
 
@@ -340,7 +260,7 @@ class CustomPasswordChangeSerializer(serializers.Serializer):
 
         self.user_id = self.request.data.get("user_id", None)
         if self.user_id is not None:
-            user = User.objects.get(pk=self.user_id)
+            user = Client.objects.get(pk=self.user_id)
         self.user = getattr(self.request, 'user', user)
 
     def validate_old_password(self, value):
@@ -376,9 +296,6 @@ class CustomRegisterSerializer(BaseRegisterSerializer):
     password2 = serializers.CharField(write_only=True)
 
     def custom_signup(self, request, user):
-        Profile.objects.create(
-            user=user, created_by=user
-        )
         # user.is_ops_admin = True
         user.save()
 
@@ -400,15 +317,11 @@ class RegisterNonAdminUserSerializer(BaseRegisterSerializer):
     - Also set password fields to unusable passwords.
     """
 
-    role = serializers.ChoiceField(choices=User.ROLE_CHOICES, write_only=True)
     password1 = serializers.CharField(write_only=True)
     password2 = serializers.CharField(write_only=True)
 
     def custom_signup(self, request, user):
-        role = self.validated_data.get("role")
-        user.role = role
         user.save()
-        Profile.objects.create(user=user, created_by=user)
 
 
     def get_cleaned_data(self):
@@ -418,7 +331,6 @@ class RegisterNonAdminUserSerializer(BaseRegisterSerializer):
             "email": self.validated_data.get("email"),
             "phone": self.validated_data.get("phone"),
             "username":self.validated_data.get("username"),
-            "role": self.validated_data.get("role"),
             "password1": self.validated_data.get("password1"),
         }
 
@@ -468,20 +380,20 @@ class CustomAuthenticationBackend:
 
     def authenticate(self, email_or_username=None, password=None):
         try:
-             user = User.objects.get(
+             user = Client.objects.get(
                  Q(email__iexact=email_or_username) | Q(username__iexact=email_or_username)
              )
              pwd_valid = user.check_password(password)
              if pwd_valid:            
                  return user
              return None
-        except User.DoesNotExist:
+        except Client.DoesNotExist:
             return None
 
     def get_user(self, user_id):
         try:
-            return User.objects.get(pk=user_id)
-        except User.DoesNotExist:
+            return Client.objects.get(pk=user_id)
+        except Client.DoesNotExist:
             return None
 
 

@@ -14,7 +14,7 @@ from kopero_auth.serializers import (
 from common.jwt import get_jwt
 from datetime import timezone, datetime, timezone as dt_timezone
 # from common.permissions import IsOpsAdmin
-from kopero_auth.models import User
+from kopero_auth.models import Client, CrewMmember
 from django.utils import timezone
 from common.views import BaseDetailView
 from allauth.account.signals import email_confirmed
@@ -39,7 +39,7 @@ class UsersListView(GenericAPIView):
     Users list view
     """
     permission_classes = [IsAuthenticated]
-    model = User
+    model = Client
     serializer_class = UserSerializer
     read_serializer_class = ReadUserSerializer
 
@@ -76,13 +76,13 @@ class UserDetailView(BaseDetailView):
     """
     Update, Delete, or View a User
     """
-    model = User
+    model = Client
     serializer_class = UserSerializer
 
     @permission_classes([IsAuthenticated])
     def get_object(self, request, pk):
         if pk is not None:
-            return get_object_or_404(User, pk=pk)
+            return get_object_or_404(Client, pk=pk)
         return request.user
 
     def get(self, request, pk=None):
@@ -107,99 +107,7 @@ class UserDetailView(BaseDetailView):
         else:
             item.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-
-class PhotographersListView(GenericAPIView):
-    """
-    List view for users with the photographer role
-    """
-    permission_classes = [IsAuthenticated]
-    model = User
-    serializer_class = ReadUserSerializer
-
-    def get_queryset(self):
-        return self.model.objects.filter(role__icontains='photographer', is_deleted=False)
-
-    def get(self, request):
-        queryset = self.get_queryset()
-        page = self.paginate_queryset(queryset)
-        serializer = self.serializer_class(page, many=True)
-        return self.get_paginated_response(serializer.data)
-
-
-class PhotographerDetailView(GenericAPIView):
-    """
-    Detail view for a specific photographer
-    """
-    permission_classes = [IsAuthenticated]
-    model = User
-    serializer_class = LeanUserSerializer
-
-    def get_object(self, pk):
-        # No need to cast pk to UUID manually, let Django handle it
-        return get_object_or_404(User, pk=pk, role__iexact='photographer', is_deleted=False)
-
-    def get(self, request, pk=None):
-        photographer = self.get_object(pk)
-        serializer = self.serializer_class(photographer)
-        return Response(serializer.data)
-
-    def put(self, request, pk=None):
-        photographer = self.get_object(pk)
-        serializer = self.serializer_class(photographer, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def delete(self, request, pk=None):
-        photographer = self.get_object(pk)
-        photographer.is_deleted = True
-        photographer.deleted_at = datetime.datetime.now()
-        photographer.modified_by = request.user
-        photographer.email = f"{photographer.id}@deleted.com"
-
-        # Handle EmailAddress if exists
-        try:
-            email_address = EmailAddress.objects.get(user=photographer)
-            email_address.email = photographer.email
-            email_address.save()
-        except EmailAddress.DoesNotExist:
-            pass
-
-        photographer.is_active = False
-        photographer.save()
-        return Response(status=status.HTTP_204_NO_CONTENT)
     
-class ProfileListView(GenericAPIView):
-    """
-    List view for user profiles
-    """
-    permission_classes = [IsAuthenticated]
-    serializer_class = ProfileSerializer
-
-    def get_queryset(self):
-        return Profile.objects.filter(user__is_active=True).order_by('id')
-
-    def get(self, request):
-        queryset = self.get_queryset()
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.serializer_class(page, many=True)
-            return self.get_paginated_response(serializer.data)
-        serializer = self.serializer_class(queryset, many=True)
-        return Response(serializer.data)
-
-
-class ProfileDetailView(generics.RetrieveUpdateAPIView):
-    """
-    Detail view for a specific user profile
-    """
-    queryset = User.objects.all()
-    serializer_class = UserProfileSerializer
-    permission_classes = [IsAuthenticated]
-    lookup_field = 'id'
-    lookup_url_kwarg = 'user_id'
-
 
 
 @api_view(["GET"])
