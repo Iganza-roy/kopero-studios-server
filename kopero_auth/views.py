@@ -1,14 +1,22 @@
+import datetime
+from django.shortcuts import get_object_or_404
 from rest_framework import status
+from common.views import BaseDetailView
+from kopero_auth.models import Client, CrewMember
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.generics import GenericAPIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import (
+    ClientSerializer,
     CrewMemberRegistrationSerializer,
     CrewMemberLoginSerializer,
     ClientLoginSerializer,
     ClientRegistrationSerializer,
-    UserSerializer
+    CrewSerializer,
+    ReadClientSerializer,
+    ReadCrewSerializer,
 )
 
 
@@ -50,7 +58,6 @@ class CrewMemberLoginView(APIView):
         if serializer.is_valid():
             user = serializer.validated_data
             tokens = serializer.get_tokens(user)
-            # user_serializer = UserSerializer(user)
 
             return Response({
                 "tokens": tokens
@@ -66,7 +73,6 @@ class ClientLoginView(APIView):
         if serializer.is_valid():
             user = serializer.validated_data
             tokens = serializer.get_tokens(user)
-            # user_serializer = UserSerializer(user)
 
             return Response({
                 "tokens": tokens
@@ -82,3 +88,279 @@ class LogoutView(APIView):
             return Response(status=status.HTTP_205_RESET_CONTENT)
         except:
             return Response(status=status.HTTP_400_BAD_REQUEST)
+
+
+class ClientsListView(GenericAPIView):
+    """
+    API view to list Client users.
+
+    This view supports filtering by role and pagination. If the 'all' 
+    query parameter is provided, all clients matching the filters will 
+    be returned without pagination.
+
+    Attributes:
+        model: The model class used for querying clients.
+        serializer_class: The serializer class for serializing client data.
+        read_serializer_class: The serializer class for read-only operations.
+
+    Methods:
+        get_read_serializer_class: Returns the appropriate serializer class for reading data.
+        get_queryset: Retrieves a queryset of clients based on the request parameters.
+        get: Handles GET requests to list clients.
+    """
+
+    model = Client
+    serializer_class = ClientSerializer
+    read_serializer_class = ReadClientSerializer
+
+    def get_read_serializer_class(self):
+        """
+        Returns the serializer class to be used for reading data.
+        
+        If a read serializer class is defined, it will be used; otherwise,
+        the default serializer class will be returned.
+        """
+        if self.read_serializer_class is not None:
+            return self.read_serializer_class
+        return self.serializer_class
+
+    def get_queryset(self, request):
+        """
+        Retrieves a queryset of clients based on the 'role' filter.
+
+        Args:
+            request: The HTTP request object containing query parameters.
+
+        Returns:
+            QuerySet: A queryset of clients filtered by role and marked as not deleted.
+        """
+        queryset = []
+        role = request.GET.get("role", None)  # Filter by role
+        if role is not None:
+            queryset = self.model.objects.filter(role=role, is_deleted=False)
+        else:
+            queryset = self.model.objects.filter(is_deleted=False) 
+        return queryset
+
+    def get(self, request):
+        """
+        Handles GET requests to list clients.
+
+        If the 'all' query parameter is provided, all matching clients 
+        will be returned. Otherwise, results will be paginated.
+
+        Args:
+            request: The HTTP request object.
+
+        Returns:
+            Response: A response containing the serialized client data.
+        """
+        all_status = request.GET.get("all", None)
+        queryset = self.get_queryset(request)
+        if all_status is not None:
+            serializer = self.get_read_serializer_class()(queryset, many=True)
+            return Response(serializer.data) 
+        else:  
+            page = self.paginate_queryset(queryset)
+            serializer = self.get_read_serializer_class()(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+
+class ClientDetailView(BaseDetailView):
+    """
+    API view to retrieve, update, or delete a Client user.
+
+    This view handles operations for individual clients identified by 
+    their primary key (PK).
+
+    Attributes:
+        permission_classes: The permission classes applied to this view.
+        model: The model class used for querying clients.
+        serializer_class: The serializer class for client operations.
+
+    Methods:
+        get_object: Retrieves a client object based on the primary key.
+        get: Handles GET requests to retrieve a client’s details.
+        put: Handles PUT requests to update a client’s information.
+    """
+    
+    permission_classes = [IsAuthenticated]
+    model = Client
+    serializer_class = ClientSerializer
+
+    def get_object(self, request, pk):
+        """
+        Retrieves a Client object based on the provided primary key.
+
+        Args:
+            request: The HTTP request object.
+            pk: The primary key of the client to retrieve.
+
+        Returns:
+            Client: The client object if found; raises 404 if not.
+        """
+        if pk is not None:
+            return get_object_or_404(Client, pk=pk)
+        return request.user
+
+    def get(self, request, pk=None):
+        """
+        Handles GET requests to retrieve a client’s details.
+
+        Args:
+            request: The HTTP request object.
+            pk: The primary key of the client.
+
+        Returns:
+            Response: A response containing the serialized client data.
+        """
+        return super().get(request, pk)
+
+    def put(self, request, pk=None):
+        """
+        Handles PUT requests to update a client’s information.
+
+        Args:
+            request: The HTTP request object containing updated data.
+            pk: The primary key of the client to update.
+
+        Returns:
+            Response: A response indicating the result of the update operation.
+        """
+        return super().put(request, pk)
+
+
+#Crew list and detail views
+class CrewsListView(GenericAPIView):
+    """
+    View to handle listing Crew Members.
+
+    This view allows for the retrieval of crew members, with optional filtering
+    based on the 'category' field. It supports pagination and can return all 
+    members if specified.
+
+    Methods:
+        get_read_serializer_class: Determines the appropriate serializer class 
+                                    for read operations.
+        get_queryset: Retrieves the queryset of crew members, applying any 
+                      filters based on request parameters.
+        get: Handles GET requests to return the list of crew members.
+    """
+    model = CrewMember
+    serializer_class = CrewSerializer
+    read_serializer_class = ReadCrewSerializer
+
+    def get_read_serializer_class(self):
+        """
+        Returns the serializer class for read operations.
+
+        If a custom read serializer is defined, it is returned; otherwise, the 
+        default serializer is returned.
+        """
+        if self.read_serializer_class is not None:
+            return self.read_serializer_class
+        return self.serializer_class
+
+    def get_queryset(self, request):
+        """
+        Retrieves the queryset of Crew Members based on request parameters.
+
+        Filters the queryset based on the 'category' parameter in the request.
+        Only non-deleted crew members are included in the results.
+
+        Args:
+            request: The HTTP request object.
+
+        Returns:
+            QuerySet: A queryset of CrewMember instances.
+        """
+        queryset = []
+        category = request.GET.get("category", None)  # Retrieve the 'category' filter
+        if category is not None:
+            queryset = self.model.objects.filter(category=category, is_deleted=False)
+        else:
+            queryset = self.model.objects.filter(is_deleted=False)
+        return queryset
+
+    def get(self, request):
+        """
+        Handles GET requests to retrieve a list of crew members.
+
+        If the 'all' parameter is provided, returns all crew members. Otherwise, 
+        returns a paginated response.
+
+        Args:
+            request: The HTTP request object.
+
+        Returns:
+            Response: A Response object containing the serialized data of crew members.
+        """
+        all_status = request.GET.get("all", None)
+        queryset = self.get_queryset(request)
+        if all_status is not None:
+            serializer = self.get_read_serializer_class()(queryset, many=True)
+            return Response(serializer.data) 
+        else:  
+            page = self.paginate_queryset(queryset)
+            serializer = self.get_read_serializer_class()(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+class CrewDetailView(BaseDetailView):
+    """
+    View to handle operations on a specific Crew Member.
+
+    This view allows for viewing, updating, or deleting a crew member based on 
+    their unique identifier (primary key).
+
+    Methods:
+        get_object: Retrieves the specified crew member or the authenticated user.
+        get: Handles GET requests to retrieve a crew member's details.
+        put: Handles PUT requests to update a crew member's details.
+    """
+    permission_classes = [IsAuthenticated]
+    model = CrewMember
+    serializer_class = CrewSerializer
+
+    def get_object(self, request, pk):
+        """
+        Retrieves a Crew Member object by its primary key.
+
+        If a primary key is provided, the corresponding object is fetched.
+        Otherwise, the authenticated user object is returned.
+
+        Args:
+            request: The HTTP request object.
+            pk: The primary key of the Crew Member.
+
+        Returns:
+            CrewMember: The corresponding Crew Member object or the authenticated user.
+        """
+        if pk is not None:
+            return get_object_or_404(CrewMember, pk=pk)
+        return request.user
+
+    def get(self, request, pk=None):
+        """
+        Handles GET requests to retrieve details of a crew member.
+
+        Args:
+            request: The HTTP request object.
+            pk: The primary key of the Crew Member.
+
+        Returns:
+            Response: A Response object containing the serialized crew member data.
+        """
+        return super().get(request, pk)
+
+    def put(self, request, pk=None):
+        """
+        Handles PUT requests to update a crew member's details.
+
+        Args:
+            request: The HTTP request object containing updated data.
+            pk: The primary key of the Crew Member.
+
+        Returns:
+            Response: A Response object indicating the result of the update operation.
+        """
+        return super().put(request, pk)

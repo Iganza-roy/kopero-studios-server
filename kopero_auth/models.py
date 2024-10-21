@@ -94,6 +94,8 @@ class BaseUser(AbstractBaseUser, PermissionsMixin):
         """Sends an email to this user."""
         send_mail(subject, message, from_email, [self.email], **kwargs)
 
+    class Meta:
+        abstract = False
 
 class ClientManager(MyUserManager):
     def create_client(self, email, username, password=None, **extra_fields):

@@ -1,13 +1,8 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers
-from .models import BaseUser, Client, CrewMember
+from .models import Client, CrewMember
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.hashers import check_password
-
-
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = BaseUser
-        fields = ["id", "email", "username", "first_name", "last_name"]
 
 
 class CrewMemberRegistrationSerializer(serializers.ModelSerializer):
@@ -94,3 +89,92 @@ class ClientLoginSerializer(serializers.Serializer):
             "refresh": str(refresh),
             "access": str(refresh.access_token)
         }
+
+class ReadClientSerializer(serializers.ModelSerializer):
+    """
+    Serializer class for a Client instance
+    """
+
+    class Meta:
+        model = Client
+        fields = (
+            "id",
+            "email",
+            "username",
+            "first_name",
+            "last_name",
+            "full_name",
+            "phone",
+            "is_active",
+        )
+        extra_kwargs = {"password": {"write_only": True}}
+        read_only_fields = ("id", "full_name")
+
+
+class ClientSerializer(serializers.ModelSerializer):
+    """
+    Serializer class for a Client instance for detail view
+    """
+
+    class Meta:
+        model = Client
+        fields = (
+            "id",
+            "email",
+            "password",
+            "username",
+            "first_name",
+            "last_name",
+            "full_name",
+            "phone",
+            "image",
+            "bio",
+            "is_active",
+        )
+        extra_kwargs = {"password": {"write_only": True}}
+        read_only_fields = ("id", "full_name")
+
+
+class ReadCrewSerializer(serializers.ModelSerializer):
+    """
+    Serializer class for a Client instance
+    """
+
+    class Meta:
+        model = CrewMember
+        fields = (
+            "id",
+            "email",
+            "username",
+            "category",
+            "full_name",
+            "phone",
+            "image",
+            "is_active",
+        )
+        extra_kwargs = {"password": {"write_only": True}}
+        read_only_fields = ("id", "full_name")
+
+class CrewSerializer(serializers.ModelSerializer):
+    """
+    Serializer class for a Crew instance for detail view
+    """
+
+    class Meta:
+        model = CrewMember
+        fields = (
+            "id",
+            "email",
+            "password",
+            "username",
+            "first_name",
+            "last_name",
+            "full_name",
+            "phone",
+            "image",
+            "sessions_booked",
+            "is_active",
+            "category",
+        )
+        extra_kwargs = {"password": {"write_only": True}}
+        read_only_fields = ("id", "full_name")
