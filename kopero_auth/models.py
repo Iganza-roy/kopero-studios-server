@@ -1,13 +1,10 @@
 from django.db import models
-# from booking.models import AvailableTime
 from django.contrib.auth.models import PermissionsMixin
 from django.contrib.auth.base_user import BaseUserManager, AbstractBaseUser
 from django.utils import timezone
 from django.core.mail import send_mail
 from uuid import uuid4 as uuid
 from django.utils.translation import gettext_lazy as _
-from django.conf import settings
-from common.models import TimeStampedModelMixin
 
 
 # Create your models here.
@@ -55,13 +52,22 @@ class BaseUser(AbstractBaseUser, PermissionsMixin):
             "Designates whether this user should be treated as active. "
         ),
     )
+
+    is_staff = models.BooleanField(
+        _("staff"),
+        default=False,
+        help_text=_(
+            "Designates whether this user is staff or not. "
+        ),
+    )
+
     date_joined = models.DateTimeField(_("date joined"), default=timezone.now)
 
     objects = MyUserManager()
 
     MAIL_FIELD = "email"
-    USERNAME_FIELD = "username"
-    REQUIRED_FIELDS = ['email', 'first_name', 'last_name']
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
 
     def _usable(self):
         return self.has_usable_password()
@@ -95,7 +101,7 @@ class ClientManager(MyUserManager):
 
 
 class Client(BaseUser):
-    bookings = models.JSONField(default=list, balnk=True, null=True)
+    bookings = models.JSONField(default=list, blank=True, null=True)
 
     objects = ClientManager()
 
@@ -122,7 +128,7 @@ class CrewMember(BaseUser):
     ]
 
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
-    sessions_booked = models.JSONField(default=list, balnk=True, null=True)
+    sessions_booked = models.JSONField(default=list, blank=True, null=True)
 
     objects = CrewMemberManager()
 

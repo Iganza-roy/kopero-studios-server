@@ -23,5 +23,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/auth/', include('kopero_auth.urls')),
     path('api/v1/services/', include('services.urls')),
-    path('api/v1/booking/', include('booking.urls')),
+    # path('api/v1/booking/', include('booking.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

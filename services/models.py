@@ -5,8 +5,8 @@ class Service(models.Model):
     """
     Represents services database table
     """
-    name = models.CharField(max_length=200)
-    tag = models.CharField(max_length=200)
+    name = models.CharField(max_length=200, null=False)
+    tag = models.CharField(max_length=200, null=False)
     description = models.TextField(max_length=2000, blank=True)
     rate_per_hour = models.FloatField(default=1000.00)
     image = models.ImageField(upload_to="services", blank=True, null=True)
