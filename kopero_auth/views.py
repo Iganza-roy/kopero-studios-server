@@ -10,11 +10,13 @@ from rest_framework.generics import GenericAPIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import (
     ClientSerializer,
+    ClientUpdateSerializer,
     CrewMemberRegistrationSerializer,
     CrewMemberLoginSerializer,
     ClientLoginSerializer,
     ClientRegistrationSerializer,
     CrewSerializer,
+    CrewUpdateSerializer,
     ReadClientSerializer,
     ReadCrewSerializer,
     PasswordResetRequestSerializer,
@@ -188,9 +190,8 @@ class ClientDetailView(BaseDetailView):
     
     permission_classes = [IsAuthenticated]
     model = Client
-    serializer_class = ClientSerializer
 
-    def get_object(self, request, pk):
+    def get_object(self, pk):
         """
         Retrieves a Client object based on the provided primary key.
 
@@ -201,9 +202,7 @@ class ClientDetailView(BaseDetailView):
         Returns:
             Client: The client object if found; raises 404 if not.
         """
-        if pk is not None:
-            return get_object_or_404(Client, pk=pk)
-        return request.user
+        return get_object_or_404(Client, pk=pk)
 
     def get(self, request, pk=None):
         """
@@ -216,20 +215,25 @@ class ClientDetailView(BaseDetailView):
         Returns:
             Response: A response containing the serialized client data.
         """
-        return super().get(request, pk)
+        crew_member = self.get_object(pk)
+        serializer = ClientSerializer(crew_member)
+        return Response(serializer.data)
 
-    def put(self, request, pk=None):
+    def patch(self, request, pk=None):
         """
-        Handles PUT requests to update a client’s information.
-
+        Handles PATCH requests to update a crew member's details.
         Args:
             request: The HTTP request object containing updated data.
-            pk: The primary key of the client to update.
-
+            pk: The primary key of the Crew Member.
         Returns:
-            Response: A response indicating the result of the update operation.
+            Response: A Response object indicating the result of the update operation.
         """
-        return super().put(request, pk)
+        client = self.get_object(pk)
+        serializer = ClientUpdateSerializer(client, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 #Crew list and detail views
@@ -321,9 +325,8 @@ class CrewDetailView(BaseDetailView):
     """
     permission_classes = [IsAuthenticated]
     model = CrewMember
-    serializer_class = CrewSerializer
 
-    def get_object(self, request, pk):
+    def get_object(self, pk):
         """
         Retrieves a Crew Member object by its primary key.
 
@@ -337,9 +340,7 @@ class CrewDetailView(BaseDetailView):
         Returns:
             CrewMember: The corresponding Crew Member object or the authenticated user.
         """
-        if pk is not None:
-            return get_object_or_404(CrewMember, pk=pk)
-        return request.user
+        return get_object_or_404(CrewMember, pk=pk)
 
     def get(self, request, pk=None):
         """
@@ -352,20 +353,25 @@ class CrewDetailView(BaseDetailView):
         Returns:
             Response: A Response object containing the serialized crew member data.
         """
-        return super().get(request, pk)
+        crew_member = self.get_object(pk)
+        serializer = CrewSerializer(crew_member)
+        return Response(serializer.data)
 
-    def put(self, request, pk=None):
+    def patch(self, request, pk=None):
         """
-        Handles PUT requests to update a crew member's details.
-
+        Handles PATCH requests to update a crew member's details.
         Args:
             request: The HTTP request object containing updated data.
             pk: The primary key of the Crew Member.
-
         Returns:
             Response: A Response object indicating the result of the update operation.
         """
-        return super().put(request, pk)
+        crew_member = self.get_object(pk)
+        serializer = CrewUpdateSerializer(crew_member, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ClientPasswordResetRequestView(APIView):

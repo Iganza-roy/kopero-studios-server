@@ -141,6 +141,11 @@ class ClientSerializer(serializers.ModelSerializer):
         extra_kwargs = {"password": {"write_only": True}}
         read_only_fields = ("id", "full_name")
 
+class ClientUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Client
+        fields = ['image', 'first_name', 'last_name', 'phone', 'bio']
+
 
 class ReadCrewSerializer(serializers.ModelSerializer):
     """
@@ -186,6 +191,13 @@ class CrewSerializer(serializers.ModelSerializer):
         extra_kwargs = {"password": {"write_only": True}}
         read_only_fields = ("id", "full_name")
 
+class CrewUpdateSerializer(serializers.ModelSerializer):
+    """
+    Updating crew specific fields
+    """
+    class Meta:
+        model = CrewMember
+        fields = ['image', 'first_name', 'last_name', 'phone', 'bio',]
 
 class PasswordResetRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
