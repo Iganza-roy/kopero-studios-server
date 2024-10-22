@@ -163,6 +163,7 @@ class ReadCrewSerializer(serializers.ModelSerializer):
             "phone",
             "image",
             "is_active",
+            "average_rating",
         )
         extra_kwargs = {"password": {"write_only": True}}
         read_only_fields = ("id", "full_name")
@@ -187,6 +188,7 @@ class CrewSerializer(serializers.ModelSerializer):
             "sessions_booked",
             "is_active",
             "category",
+            "average_rating",
         )
         extra_kwargs = {"password": {"write_only": True}}
         read_only_fields = ("id", "full_name")

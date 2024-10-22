@@ -7,7 +7,6 @@ from uuid import uuid4 as uuid
 from django.utils.translation import gettext_lazy as _
 
 
-# Create your models here.
 
 class MyUserManager(BaseUserManager):
     def _create_user(self, email, username, password=None, **extra_fields):
@@ -131,7 +130,7 @@ class CrewMember(BaseUser):
 
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
     sessions_booked = models.JSONField(default=list, blank=True, null=True)
-
+    average_rating = models.FloatField(default=0.0)
     objects = CrewMemberManager()
 
     def __str__(self):

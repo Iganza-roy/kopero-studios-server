@@ -20,8 +20,6 @@ from .views import (
     CrewPasswordResetRequestView
 )
 
-
-app_name = "kopero_auth"
 urlpatterns = [
     path('register/crew/', CrewMemberRegistrationView.as_view(), name="register_crew_member"),
     path("register/client/", ClientRegistrationView.as_view(), name="register_customer"),
