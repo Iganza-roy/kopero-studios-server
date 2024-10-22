@@ -17,6 +17,8 @@ from .serializers import (
     CrewSerializer,
     ReadClientSerializer,
     ReadCrewSerializer,
+    PasswordResetRequestSerializer,
+    PasswordResetSerializer
 )
 
 
@@ -364,3 +366,46 @@ class CrewDetailView(BaseDetailView):
             Response: A Response object indicating the result of the update operation.
         """
         return super().put(request, pk)
+
+
+class ClientPasswordResetRequestView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = PasswordResetRequestSerializer(data=request.data, context={"user_type": "client"})
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Password reset link sent"}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CrewPasswordResetRequestView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = PasswordResetRequestSerializer(data=request.data, context={'user_type': 'crew'})
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Password reset link sent"}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class ClientPasswordResetView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = PasswordResetSerializer(data=request.data, context={'user_type': 'client'})
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Password reset successful"}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+class CrewPasswordResetView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = PasswordResetSerializer(data=request.data, context={'user_type': 'crew'})
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "Password reset successful"}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
