@@ -1,31 +1,28 @@
 from django.db import models
-# from booking.models import AvailableTime
 from django.contrib.auth.models import PermissionsMixin
 from django.contrib.auth.base_user import BaseUserManager, AbstractBaseUser
 from django.utils import timezone
 from django.core.mail import send_mail
 from uuid import uuid4 as uuid
 from django.utils.translation import gettext_lazy as _
-from django.conf import settings
-from common.models import TimeStampedModelMixin
 
 
 # Create your models here.
 
 class MyUserManager(BaseUserManager):
-    def _create_user(self, email, password=None, **extra_fields):
+    def _create_user(self, email, username, password=None, **extra_fields):
         if not email:
             raise ValueError('The Email field must be set')
         email = self.normalize_email(email)
-        user = self.model(email=email, **extra_fields)
+        user = self.model(email=email, username=username, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
     
-    def create_user(self, email, password, **extra_fields):
-        return self._create_user(email, password, **extra_fields)
+    def create_user(self, email, username, password, **extra_fields):
+        return self._create_user(email, username, password, **extra_fields)
 
-    def create_superuser(self, email=None, password=None, **extra_fields):
+    def create_superuser(self, email=None, username=None, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
 
@@ -34,49 +31,20 @@ class MyUserManager(BaseUserManager):
         if extra_fields.get("is_superuser") is not True:
             raise ValueError("Superuser must have is_superuser=True.")
 
-        return self._create_user(email, password, **extra_fields)
+        return self._create_user(email, username, password, **extra_fields)
     
-class User(AbstractBaseUser, PermissionsMixin):
+class BaseUser(AbstractBaseUser, PermissionsMixin):
     id = models.UUIDField(default=uuid, primary_key=True)
     first_name = models.CharField(_("first name"), max_length=30, blank=True)
     last_name = models.CharField(_("last name"), max_length=150, blank=True)
     email = models.EmailField(_("email address"), blank=True, unique=True)
     username = models.CharField(_("username"), max_length=150, blank=True, unique=True)
     phone = models.CharField(max_length=20, null=True, blank=True)
+    image = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
+    bio = models.TextField(max_length=1000, blank=True)
     is_ops_admin = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     deleted_at = models.DateTimeField(null=True)
-    modified_by = models.ForeignKey(
-        "User",
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name="deleted_%(class)s",
-    )
-    OPERATIONS_ADMIN = "operations"
-    REGULAR = 'regular'
-    PHOTOGRAPHER = 'photographer'
-    ROLE_CHOICES = (
-        ('photographer', 'Photographer'),
-        ('Regular', 'regular'),
-        ('Operations Admin', "Operations Admin"),
-    )
-    role = models.CharField(
-        _("user role"),
-        max_length=20,
-        blank=True,
-        choices=ROLE_CHOICES,
-        help_text=_(
-            "Designates the role of the user in the system - For Authorization"
-        ),
-        default="Regular"
-    )
-    is_staff = models.BooleanField(
-        _("staff status"),
-        default=False,
-        help_text=_(
-            "Designates whether the user can log into this admin site."
-        ),
-    )
     is_active = models.BooleanField(
         _("active"),
         default=True,
@@ -84,13 +52,22 @@ class User(AbstractBaseUser, PermissionsMixin):
             "Designates whether this user should be treated as active. "
         ),
     )
+
+    is_staff = models.BooleanField(
+        _("staff"),
+        default=False,
+        help_text=_(
+            "Designates whether this user is staff or not. "
+        ),
+    )
+
     date_joined = models.DateTimeField(_("date joined"), default=timezone.now)
 
     objects = MyUserManager()
 
     MAIL_FIELD = "email"
-    USERNAME_FIELD = "username"
-    REQUIRED_FIELDS = ['email', 'first_name', 'last_name']
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
 
     def _usable(self):
         return self.has_usable_password()
@@ -117,52 +94,48 @@ class User(AbstractBaseUser, PermissionsMixin):
         """Sends an email to this user."""
         send_mail(subject, message, from_email, [self.email], **kwargs)
 
-    def _is_regular_user(self):
-        """Returns whether a user is regular or not"""
-        return self.role == self.Regular
-
-
-    _is_regular_user.boolean = True
-    is_regular_user = property(_is_regular_user)
-
-    def _is_photographer(self):
-        """Returns whether a user is photographer or not"""
-        return self.role == self.Photographer
-
-    _is_photographer.boolean = True
-    is_photographer = property(_is_photographer)
-
-
-    # def _is_ops_admin(self):
-    #     return self.role == self.OPERATIONS_ADMIN
-
-    # _is_ops_admin.boolean = True
-    # is_ops_admin = property(_is_ops_admin)
-
     class Meta:
-        db_table = "users"
-        ordering = ["-date_joined"]
+        abstract = False
 
-    
+class ClientManager(MyUserManager):
+    def create_client(self, email, username, password=None, **extra_fields):
+        return self.create_user(email, username, password, **extra_fields)
 
-class Profile(TimeStampedModelMixin):
-    """
-    A user profile instance - stores extra information about a user instance
-    - user: The user object to which this profile belongs
-    - picture: URL to the user's profile picture
-    """
 
-    user = models.OneToOneField(
-        settings.AUTH_USER_MODEL,
-        related_name="profile",
-        on_delete=models.CASCADE,
-    )
-    address = models.CharField(max_length=250,blank=True)
-    town = models.CharField(max_length=250,blank=True)
-    description = models.CharField(max_length=250,blank=True)
-    picture = models.ImageField(upload_to='profile_pictures/', null=True, blank=True)
-    portfolio_link = models.URLField(blank=True, null=True)
-    available_time = models.ManyToManyField('booking.AvailableTime')
+class Client(BaseUser):
+    bookings = models.JSONField(default=list, blank=True, null=True)
+
+    objects = ClientManager()
 
     def __str__(self):
-        return self.user.get_username()
+        return self.get_full_name()
+    class Meta:
+        db_table = "clients"
+        ordering = ["-date_joined"]
+
+
+class CrewMemberManager(MyUserManager):
+    def create_crew(self, email, username, password=None, **extra_fields):
+        extra_fields.setdefault("is_staff", True)
+        return self.create_user(email, username, password, **extra_fields)
+
+
+class CrewMember(BaseUser):
+    PHOTOGRAPHER = 'photographer'
+    VIDEOGRAPHER = 'videographer'
+    
+    CATEGORY_CHOICES = [
+        (PHOTOGRAPHER, 'Photographer'),
+        (VIDEOGRAPHER, 'Videographer'),
+    ]
+
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
+    sessions_booked = models.JSONField(default=list, blank=True, null=True)
+
+    objects = CrewMemberManager()
+
+    def __str__(self):
+        return self.get_full_name()
+    class Meta:
+        db_table = "crew"
+        ordering = ["-date_joined"]

@@ -42,6 +42,7 @@ THIRD_PARTY_APPS = [
     'allauth.socialaccount',
     'dj_rest_auth.registration',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
 ]
 
@@ -93,7 +94,7 @@ TEMPLATES = [
     },
 ]
 
-AUTH_USER_MODEL = 'kopero_auth.User'
+AUTH_USER_MODEL = 'kopero_auth.BaseUser'
 
 
 REST_FRAMEWORK = {
@@ -113,7 +114,7 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=365*5),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-    'ROTATE_REFRESH_TOKENS': False,
+    'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'UPDATE_LAST_LOGIN': False,
 
@@ -144,24 +145,24 @@ JWT_AUTH_COOKIE = 'auth-cookie'
 OLD_PASSWORD_FIELD_ENABLED = False
 
 
-ACCOUNT_ADAPTER = 'kopero_auth.adapter.CustomAccountAdapter'
-ACCOUNT_USERNAME_REQUIRED = True
-ACCOUNT_USER_MODEL_USERNAME_FIELD = 'username'
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_AUTHENTICATION_METHOD = 'username_email'
-USERNAME_FIELD="username"
-ACCOUNT_LOGOUT_ON_GET = False
-ACCOUNT_EMAIL_VERIFICATION="none"
+# ACCOUNT_ADAPTER = 'kopero_auth.adapter.CustomAccountAdapter'
+# ACCOUNT_USERNAME_REQUIRED = True
+# ACCOUNT_USER_MODEL_USERNAME_FIELD = 'username'
+# ACCOUNT_EMAIL_REQUIRED = True
+# ACCOUNT_AUTHENTICATION_METHOD = 'username_email'
+# USERNAME_FIELD="username"
+# ACCOUNT_LOGOUT_ON_GET = False
+# ACCOUNT_EMAIL_VERIFICATION="none"
 
 
-REST_AUTH = {
-    'LOGIN_SERIALIZER': "kopero_auth.serializers.CustomLoginSerializer",
-    "PASSWORD_RESET_SERIALIZER": "kopero_auth.serializers.CustomPasswordResetSerializer",
-    "USER_DETAILS_SERIALIZER": "kopero_auth.serializers.ReadUserSerializer",
-    "PASSWORD_CHANGE_SERIALIZER": "kopero_auth.serializers.CustomPasswordChangeSerializer",
-    'USE_JWT': True,
-    "REGISTER_SERIALIZER": "kopero_auth.serializers.CustomRegisterSerializer"
-}
+# REST_AUTH = {
+#     'LOGIN_SERIALIZER': "kopero_auth.serializers.CustomLoginSerializer",
+#     "PASSWORD_RESET_SERIALIZER": "kopero_auth.serializers.CustomPasswordResetSerializer",
+#     "USER_DETAILS_SERIALIZER": "kopero_auth.serializers.ReadUserSerializer",
+#     "PASSWORD_CHANGE_SERIALIZER": "kopero_auth.serializers.CustomPasswordChangeSerializer",
+#     'USE_JWT': True,
+#     "REGISTER_SERIALIZER": "kopero_auth.serializers.CustomRegisterSerializer"
+# }
 
 AUTH_PASSWORD_VALIDATORS = [
     {
