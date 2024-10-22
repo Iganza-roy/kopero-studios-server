@@ -187,7 +187,16 @@ USE_TZ = True
 STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 SITE_ID = 1
+
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = "Kopero Studios <koperostudios@gmail.com>"
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = config("EMAIL_PORT", cast=int)
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = config("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
+
+
 # CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS').split(',')
 CSRF_TRUSTED_ORIGINS = [
     'https://kopero-studios.vercel.app',
@@ -195,3 +204,5 @@ CSRF_TRUSTED_ORIGINS = [
     'https://mady.tech',
     'https://www.mady.tech',
 ]
+
+FRONTEND_URL = "https://kopero-studios.vercel.app"
