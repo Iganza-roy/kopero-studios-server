@@ -64,7 +64,14 @@ class CrewMemberLoginView(APIView):
             tokens = serializer.get_tokens(user)
 
             return Response({
-                "tokens": tokens
+                "tokens": tokens,
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "full_name": user.full_name,
+                    "category": user.category,
+                    "phone": user.phone
+                    }
             }, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
@@ -79,7 +86,13 @@ class ClientLoginView(APIView):
             tokens = serializer.get_tokens(user)
 
             return Response({
-                "tokens": tokens
+                "tokens": tokens,
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "username": user.username,
+                    "phone": user.phone
+                    }
             }, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
