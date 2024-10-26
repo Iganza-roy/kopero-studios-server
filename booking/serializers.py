@@ -5,12 +5,13 @@ from rest_framework import status
 
 class ReadBookingSerializer(serializers.ModelSerializer):
     service_name = serializers.CharField(source='service.name', read_only=True)
-    crew_name = serializers.CharField(source='crew_member.full_name', read_only=True)
+    crew = serializers.CharField(source='crew.full_name', read_only=True)
+    client = serializers.CharField(source='client.full_name', read_only=True)
 
     class Meta:
         model = Booking
-        fields = ['id', 'client', 'status', 'service_name', 'is_booked']
-        read_only_fields = ['client', 'service', 'crew_name', 'id', 'is_booked']
+        fields = ['id', 'client', 'status', 'service_name', 'is_booked', 'crew', 'is_paid', 'date', 'time']
+        read_only_fields = ['client', 'service', 'id', 'is_booked']
 
 
 class BookingSerializer(serializers.ModelSerializer):
@@ -18,46 +19,39 @@ class BookingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Booking
-        fields = ['id', 'client', 'service', 'crew_member', 'is_booked', 'total_price']
-        read_only_fields = ['is_booked', 'service_name', 'total_price']
+        fields = ['id', 'client', 'service', 'booking_number', 'crew', 'total_price', 'is_booked', 'total_price', 'date', 'time']  # Include necessary fields
+        read_only_fields = ['is_booked']
+
+    def get_total_price(self, obj):
+        # Assuming a fixed duration of 1 hour
+        duration = 1  # in hours
+        return duration * obj.service.rate_per_hour
 
     def validate(self, data):
-        session_time = data.get('session_time')  # Ensure this field exists
-        crew_member = data.get('crew_member')
+        date = data.get('date')
+        time = data.get('time')
+        crew = data.get('crew')
 
-        if session_time and not session_time.is_available:
+        if Booking.objects.filter(crew=crew, date=date, time=time).exists():
             raise serializers.ValidationError("This time slot is already booked.")
 
-        # Ensure the selected crew member matches the session time availability
-        if session_time and crew_member and session_time.crew_member != crew_member:
-            raise serializers.ValidationError("The selected crew member is not available for this time slot.")
-        
         return data
-    
+
     def create(self, validated_data):
-        session_time = validated_data['session_time']
-        service = validated_data['service']
-
-        # Calculate duration in hours for price calculation
-        duration = (session_time.end_time.hour - session_time.start_time.hour) + \
-                   (session_time.end_time.minute - session_time.start_time.minute) / 60
-        
-        total_price = duration * service.price_per_hour  # Assuming price_per_hour is defined in Service
-        
-        # Update session time availability
-        session_time.is_available = False
-        session_time.save()
-
-        # Create the booking
-        validated_data['total_price'] = total_price
+        # Set status to 'pending'
         validated_data['status'] = 'pending'
         
-        return super().create(validated_data)
-    
+        # Create the booking instance
+        booking = Booking(**validated_data)
+        booking.save()
+        
+        return booking
+
     def update(self, instance, validated_data):
         if instance.is_booked:
             raise serializers.ValidationError("This booking is already confirmed")
         return super().update(instance, validated_data)
+
     
 class ReviewSerializer(serializers.ModelSerializer):
     class Meta:

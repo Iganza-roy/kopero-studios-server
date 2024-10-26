@@ -2,12 +2,14 @@ from datetime import date, timedelta
 import datetime
 from django.shortcuts import render
 from requests import Response
+from datetime import datetime
 from rest_framework import generics
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework import status
 from rest_framework.views import APIView
 from django.db.models import Q
 from booking.models import Booking, Review
+from rest_framework.response import Response
 from booking.serializers import BookingSerializer, ReadBookingSerializer, ReviewSerializer
 from common.views import ImageBaseListView, BaseDetailView, BaseListView
 
@@ -21,7 +23,7 @@ class BookingListView(BaseListView):
         queryset = super().get_queryset()
         user = self.request.user  # Get the logged-in user
 
-        queryset = queryset.filter(Q(client=user) | Q(crew_member=user))
+        queryset = queryset.filter(Q(client=user) | Q(crew=user))
         
         q = self.request.GET.get("q", None)
         status_filter = self.request.GET.get("status", None)
@@ -123,14 +125,14 @@ class BookingDetailView(BaseDetailView):
             return Response({"detail": "You have already submitted a review for this booking."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Ensure the photographer cannot review themselves
-        if request.user == booking.crew_member:
+        if request.user == booking.cre:
             return Response({"detail": "Crew members cannot review their own bookings."}, status=status.HTTP_403_FORBIDDEN)
 
         # Create a new review
         review_data = {
             'booking': booking.id,
             'client': request.user.id,
-            'crew_member': booking.crew_member.id,
+            'crew': booking.crew.id,
             'rating': request.data.get('rating'),
         }
         review_serializer = ReviewSerializer(data=review_data)
@@ -159,7 +161,7 @@ class ReviewListView(BaseListView):
         if booking.client != self.request.user:
             return Response({"detail": "You cannot review this booking."}, status=403)
 
-        serializer.save(client=self.request.user, crew_member=booking.crew_member)
+        serializer.save(client=self.request.user, crew=booking.crew)
 
 
 class AvailableTimeView(APIView):
@@ -176,45 +178,27 @@ class AvailableTimeView(APIView):
 
         # Fetch booked times for the crew member on the specified date
         booked_times = Booking.objects.filter(
-            crew_member_id=crew_id,
+            crew_id=crew_id,
             date=selected_date
-        ).values('start_time', 'end_time')
+        ).values_list('time', flat=True)  # Get a flat list of booked times
 
-        # Create a list of booked time intervals
-        booked_intervals = [(bt['start_time'], bt['end_time']) for bt in booked_times]
-
-        # Add a time range to check for availability (e.g., 00:00 to 23:59)
-        working_start = datetime.strptime('00:00:00', '%H:%M:%S').time()
-        working_end = datetime.strptime('23:59:59', '%H:%M:%S').time()
+        # Define working hours
+        working_start = datetime.combine(selected_date, datetime.strptime('00:00:00', '%H:%M:%S').time())
+        working_end = datetime.combine(selected_date, datetime.strptime('23:59:59', '%H:%M:%S').time())
 
         available_times = []
         current_time = working_start
 
-        # Sort booked intervals by start time
-        booked_intervals.sort()
+        # Sort booked times
+        booked_times = sorted(booked_times)
 
-        for start, end in booked_intervals:
-            # Check for free time before the booked interval
-            while current_time < start:
-                next_time = (datetime.combine(datetime.today(), current_time) + timedelta(hours=1)).time()
-                if next_time <= start:  # Ensure the next time slot doesn't overlap
-                    available_times.append({
-                        'start_time': current_time.strftime('%H:%M'),
-                        'end_time': next_time.strftime('%H:%M')
-                    })
-                current_time = next_time
-            
-            # Move the current time to the end of the booked interval
-            current_time = end
-
-        # Check for free time after the last booked interval
+        # Check availability hour by hour
         while current_time < working_end:
-            next_time = (datetime.combine(datetime.today(), current_time) + timedelta(hours=1)).time()
-            if next_time <= working_end:  # Ensure within working end
+            if current_time.time() not in booked_times:
                 available_times.append({
                     'start_time': current_time.strftime('%H:%M'),
-                    'end_time': next_time.strftime('%H:%M')
+                    'end_time': (current_time + timedelta(hours=1)).strftime('%H:%M')
                 })
-            current_time = next_time
+            current_time += timedelta(hours=1)  # Move to the next hour
 
         return Response(available_times, status=status.HTTP_200_OK)
