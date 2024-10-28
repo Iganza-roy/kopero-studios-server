@@ -25,6 +25,9 @@ from .serializers import (
 
 
 class CrewMemberRegistrationView(APIView):
+    """
+    View for crew member registration
+    """
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -40,6 +43,9 @@ class CrewMemberRegistrationView(APIView):
 
 
 class ClientRegistrationView(APIView):
+    """
+    View for client/customer registration
+    """
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -55,6 +61,9 @@ class ClientRegistrationView(APIView):
     
 
 class CrewMemberLoginView(APIView):
+    """
+    View to handle login of crew members
+    """
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -77,6 +86,9 @@ class CrewMemberLoginView(APIView):
     
 
 class ClientLoginView(APIView):
+    """
+    View to handle login of clients
+    """
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -97,6 +109,9 @@ class ClientLoginView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class LogoutView(APIView):
+    """
+    View for logging out all users
+    """
     def post(self, request):
         try:
             refresh_token = request.data["refresh"]
@@ -388,6 +403,9 @@ class CrewDetailView(BaseDetailView):
 
 
 class ClientPasswordResetRequestView(APIView):
+    """
+    View for sending password reset requests for clients
+    """
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -399,6 +417,9 @@ class ClientPasswordResetRequestView(APIView):
 
 
 class CrewPasswordResetRequestView(APIView):
+    """
+    View for sending password reset requests for crew members
+    """
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -409,6 +430,9 @@ class CrewPasswordResetRequestView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 class ClientPasswordResetView(APIView):
+    """
+    View for confirming password reset for clients
+    """
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -420,6 +444,9 @@ class ClientPasswordResetView(APIView):
     
 
 class CrewPasswordResetView(APIView):
+    """
+    View for confirming password reset for crew members
+    """
     permission_classes = [AllowAny]
 
     def post(self, request):

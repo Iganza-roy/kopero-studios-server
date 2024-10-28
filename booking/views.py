@@ -14,6 +14,9 @@ from booking.serializers import BookingSerializer, ReadBookingSerializer, Review
 from common.views import ImageBaseListView, BaseDetailView, BaseListView
 
 class BookingListView(BaseListView):
+    """
+    Handles requests pertaining to all bookings
+    """
     permission_classes = [IsAuthenticated]
     model = Booking
     read_serializer_class = ReadBookingSerializer
@@ -74,6 +77,9 @@ class BookingListView(BaseListView):
         return Response({"detail": "Booking deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
 
 class BookingDetailView(BaseDetailView):
+    """
+    Handles requests pertaining to specific booking
+    """
     permission_classes = [IsAuthenticated]
     model = Booking
     read_serializer_class = ReadBookingSerializer
@@ -142,6 +148,9 @@ class BookingDetailView(BaseDetailView):
         return Response({"detail": "Review submitted successfully."}, status=status.HTTP_201_CREATED)
 
 class ReviewListView(BaseListView):
+    """
+    View for reviews to different crew members
+    """
     model = Review
     serializer_class = ReviewSerializer
     permission_classes = [IsAuthenticated]
@@ -165,6 +174,9 @@ class ReviewListView(BaseListView):
 
 
 class AvailableTimeView(APIView):
+    """
+    View for picking date and time to be used for booking
+    """
     def get(self, request, crew_id):
         date = request.query_params.get('date')
         if not date:

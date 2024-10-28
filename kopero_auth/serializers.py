@@ -13,6 +13,9 @@ import uuid
 
 
 class CrewMemberRegistrationSerializer(serializers.ModelSerializer):
+    """
+    Serializes data for handling crew member registration
+    """
     password = serializers.CharField(write_only=True)
 
     class Meta:
@@ -32,6 +35,9 @@ class CrewMemberRegistrationSerializer(serializers.ModelSerializer):
         return user
 
 class ClientRegistrationSerializer(serializers.ModelSerializer):
+    """
+    Serializes data for handling client registration
+    """
     password = serializers.CharField(write_only=True)
 
     class Meta:
@@ -51,6 +57,9 @@ class ClientRegistrationSerializer(serializers.ModelSerializer):
     
 
 class CrewMemberLoginSerializer(serializers.Serializer):
+    """
+    Serializes data for logging in crew member
+    """
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
 
@@ -75,6 +84,9 @@ class CrewMemberLoginSerializer(serializers.Serializer):
     
 
 class ClientLoginSerializer(serializers.Serializer):
+    """
+    Serializes data for logging in client
+    """
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
 
@@ -202,6 +214,9 @@ class CrewUpdateSerializer(serializers.ModelSerializer):
         fields = ['image', 'first_name', 'last_name', 'phone', 'bio',]
 
 class PasswordResetRequestSerializer(serializers.Serializer):
+    """
+    Serializer class for sending password reset request
+    """
     email = serializers.EmailField()
     
     def validate_email(self, value):
@@ -237,6 +252,9 @@ class PasswordResetRequestSerializer(serializers.Serializer):
         )
 
 class PasswordResetSerializer(serializers.Serializer):
+    """
+    Serializer class for confirming password reset
+    """
     token = serializers.CharField(write_only=True)
     uidb64 = serializers.CharField(write_only=True)
     new_password = serializers.CharField(write_only=True)

@@ -8,6 +8,9 @@ from services.models import Service
 
 
 class Booking(TimeStampedModelMixin, FlaggedModelMixin):
+    """
+    Model to repesent booking in the bookings table
+    """
     id = models.UUIDField(default=uuid.uuid4, primary_key=True)
     client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='client_bookings')
     crew = models.ForeignKey(CrewMember, on_delete=models.CASCADE, related_name='crew_bookings')
@@ -51,6 +54,9 @@ class Booking(TimeStampedModelMixin, FlaggedModelMixin):
         ]
 
 class Review(TimeStampedModelMixin, FlaggedModelMixin):
+    """
+    Model for reviews
+    """
     booking = models.OneToOneField(Booking, on_delete=models.CASCADE, related_name='review')
     client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='client_reviews')
     crew_member = models.ForeignKey(CrewMember, on_delete=models.CASCADE, related_name='crew_reviews')

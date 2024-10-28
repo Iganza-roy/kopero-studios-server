@@ -9,6 +9,9 @@ from django.utils.translation import gettext_lazy as _
 
 
 class MyUserManager(BaseUserManager):
+    """
+    Custom base user manager for the base users
+    """
     def _create_user(self, email, username, password=None, **extra_fields):
         if not email:
             raise ValueError('The Email field must be set')
@@ -33,6 +36,9 @@ class MyUserManager(BaseUserManager):
         return self._create_user(email, username, password, **extra_fields)
     
 class BaseUser(AbstractBaseUser, PermissionsMixin):
+    """
+    Custom model for the base user
+    """
     id = models.UUIDField(default=uuid, primary_key=True)
     first_name = models.CharField(_("first name"), max_length=30, blank=True)
     last_name = models.CharField(_("last name"), max_length=150, blank=True)
@@ -97,11 +103,17 @@ class BaseUser(AbstractBaseUser, PermissionsMixin):
         abstract = False
 
 class ClientManager(MyUserManager):
+    """
+    Manager for handling creation of clients
+    """
     def create_client(self, email, username, password=None, **extra_fields):
         return self.create_user(email, username, password, **extra_fields)
 
 
 class Client(BaseUser):
+    """
+    Model representing a client
+    """
     bookings = models.JSONField(default=list, blank=True, null=True)
 
     objects = ClientManager()
@@ -114,12 +126,18 @@ class Client(BaseUser):
 
 
 class CrewMemberManager(MyUserManager):
+    """
+    Manager for handling creation of clients
+    """
     def create_crew(self, email, username, password=None, **extra_fields):
         extra_fields.setdefault("is_staff", True)
         return self.create_user(email, username, password, **extra_fields)
 
 
 class CrewMember(BaseUser):
+    """
+    Model representing a crew member
+    """
     PHOTOGRAPHER = 'photographer'
     VIDEOGRAPHER = 'videographer'
     

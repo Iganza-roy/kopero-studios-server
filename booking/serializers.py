@@ -4,6 +4,9 @@ from rest_framework import serializers
 from rest_framework import status
 
 class ReadBookingSerializer(serializers.ModelSerializer):
+    """
+    Handles serialization of data used to view Bookings
+    """
     service_name = serializers.CharField(source='service.name', read_only=True)
     crew = serializers.CharField(source='crew.full_name', read_only=True)
     client = serializers.CharField(source='client.full_name', read_only=True)
@@ -15,6 +18,9 @@ class ReadBookingSerializer(serializers.ModelSerializer):
 
 
 class BookingSerializer(serializers.ModelSerializer):
+    """
+    Handles serialization of data used to book a session
+    """
     total_price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
 
     class Meta:
@@ -54,6 +60,9 @@ class BookingSerializer(serializers.ModelSerializer):
 
     
 class ReviewSerializer(serializers.ModelSerializer):
+    """
+    Handles serialization of data used to review a crew member
+    """
     class Meta:
         model = Review
         fields = ['booking', 'user', 'crew_member', 'rating']
