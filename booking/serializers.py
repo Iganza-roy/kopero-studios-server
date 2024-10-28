@@ -57,6 +57,7 @@ class BookingSerializer(serializers.ModelSerializer):
         if instance.is_booked:
             raise serializers.ValidationError("This booking is already confirmed")
         return super().update(instance, validated_data)
+    
 
     
 class ReviewSerializer(serializers.ModelSerializer):

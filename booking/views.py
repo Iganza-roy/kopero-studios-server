@@ -1,10 +1,12 @@
 from datetime import date, timedelta
 import datetime
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from requests import Response
 from datetime import datetime
 from rest_framework import generics
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from rest_framework.views import APIView
 from django.db.models import Q
@@ -86,14 +88,14 @@ class BookingDetailView(BaseDetailView):
     serializer_class = BookingSerializer
 
     def get(self, request, pk):
-        booking = self.get_object()
+        booking = self.get_object(request, pk) 
         
-        # Check if the user is the one who made the booking or if they are the photographer
-        if request.user != booking.user and request.user != booking.photographer:
+        # Check if the user is the client who made the booking
+        if request.user != booking.client:
             return Response({"detail": "You do not have permission to view this booking."}, status=status.HTTP_403_FORBIDDEN)
-        
+
         # If the booking is marked as served and the user hasn't reviewed yet, provide the option to review
-        reviewed = Review.objects.filter(booking=booking, user=request.user).exists()
+        reviewed = Review.objects.filter(booking=booking, client=request.user).exists()
         
         if booking.status == 'served' and not reviewed:
             review_message = "Submit a review."
@@ -109,7 +111,7 @@ class BookingDetailView(BaseDetailView):
         return Response(response_data, status=status.HTTP_200_OK)
 
     def delete(self, request, pk):
-        booking = self.get_object()
+        booking = self.get_object(request, pk)  # Pass request and pk here
 
         # Only allow deletion if the booking is not confirmed or served
         if booking.is_booked or booking.status == 'served':
@@ -131,7 +133,7 @@ class BookingDetailView(BaseDetailView):
             return Response({"detail": "You have already submitted a review for this booking."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Ensure the photographer cannot review themselves
-        if request.user == booking.cre:
+        if request.user == booking.crew:
             return Response({"detail": "Crew members cannot review their own bookings."}, status=status.HTTP_403_FORBIDDEN)
 
         # Create a new review
@@ -146,6 +148,7 @@ class BookingDetailView(BaseDetailView):
         review_serializer.save()
 
         return Response({"detail": "Review submitted successfully."}, status=status.HTTP_201_CREATED)
+    
 
 class ReviewListView(BaseListView):
     """
@@ -214,3 +217,39 @@ class AvailableTimeView(APIView):
             current_time += timedelta(hours=1)  # Move to the next hour
 
         return Response(available_times, status=status.HTTP_200_OK)
+    
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def cancel_booking(request, booking_id):
+    booking = get_object_or_404(Booking, id=booking_id)
+    print(f"Request User: {request.user}, Booking Client: {booking.client}")
+    # Only the client can cancel the booking
+    if booking.client.email != request.user.email:
+        return Response({"detail": "You do not have permission to cancel this booking."}, status=403)
+
+    # Update the booking status
+    booking.update_status('canceled')
+    return Response({"detail": "Booking canceled successfully."})
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def mark_as_paid(request, booking_id):
+    booking = get_object_or_404(Booking, id=booking_id)
+    if booking.crew.email != request.user.email:
+        return Response({"detail": "You do not have permission to mark this booking as paid."}, status=403)
+
+    booking.mark_as_paid()
+    return Response({"detail": "Booking marked as paid."})
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def complete_booking(request, booking_id):
+    booking = get_object_or_404(Booking, id=booking_id)
+
+    # Only the crew can complete the booking
+    if booking.crew.email != request.user.email:
+        return Response({"detail": "You do not have permission to complete this booking."}, status=403)
+
+    booking.update_status('completed')
+    return Response({"detail": "Booking marked as completed."})

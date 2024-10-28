@@ -53,6 +53,14 @@ class Booking(TimeStampedModelMixin, FlaggedModelMixin):
             models.Index(fields=['date', 'time', 'crew']),
         ]
 
+    def update_status(self, new_status):
+        self.status = new_status
+        self.save()
+
+    def mark_as_paid(self):
+        self.is_paid = True
+        self.update_status('paid')
+
 class Review(TimeStampedModelMixin, FlaggedModelMixin):
     """
     Model for reviews
