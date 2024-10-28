@@ -68,13 +68,15 @@ MIDDLEWARE = [
     'allauth.account.middleware.AccountMiddleware',
 ]
 
-CORS_ORIGIN_ALLOW_ALL=True
-CORS_ALLOW_CREDENTIALS=True
-CORS_ORIGIN_WHITELIST = (
-  'http://localhost:5173',
-  'http://127.0.0.1:5173',
-  'https://kopero-studios.vercel.app'
-)
+CORS_ORIGIN_ALLOW_ALL = False
+CORS_ORIGIN_WHITELIST = [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'https://kopero-studios.vercel.app',
+    'https://mady.tech',
+    'https://www.mady.tech',
+]
+
 
 ROOT_URLCONF = 'kopero.urls'
 
