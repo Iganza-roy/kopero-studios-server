@@ -4,25 +4,25 @@ import datetime
 import os
 from datetime import timedelta
 import dj_database_url
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# STATIC_URL = '/static/'
-# STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
+# MEDIA settings
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+# Site configuration
 SITE_ID = config("SITE_ID", cast=int)
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=Csv(), default="127.0.0.1")
 DEBUG = config("DEBUG", cast=bool, default=False)
+
 if not DEBUG:
     STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-# print(ALLOWED_HOSTS)
+
 SECRET_KEY = config("SECRET_KEY")
 
-
+# Django apps
 DJANGO_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -33,6 +33,7 @@ DJANGO_APPS = [
     "django.contrib.sites",
 ]
 
+# Third-party apps
 THIRD_PARTY_APPS = [
     "rest_framework",
     'rest_framework.authtoken',
@@ -43,9 +44,10 @@ THIRD_PARTY_APPS = [
     'dj_rest_auth.registration',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
-    'corsheaders',
+    'corsheaders',  # CORS headers
 ]
 
+# Local apps
 LOCAL_APPS = [
     'kopero_auth.apps.KoperoAuthConfig',
     'services.apps.ServicesConfig',
@@ -53,10 +55,12 @@ LOCAL_APPS = [
     'payments.apps.PaymentsConfig',
 ]
 
+# Installed apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
+# Middleware
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  # CORS middleware
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -68,6 +72,7 @@ MIDDLEWARE = [
     'allauth.account.middleware.AccountMiddleware',
 ]
 
+# CORS settings
 CORS_ORIGIN_ALLOW_ALL = False
 CORS_ORIGIN_WHITELIST = [
     'http://localhost:5173',
@@ -76,10 +81,12 @@ CORS_ORIGIN_WHITELIST = [
     'https://mady.tech',
     'https://www.mady.tech',
 ]
+CORS_ALLOW_CREDENTIALS = True  # Optional: Allow credentials
 
-
+# URL configuration
 ROOT_URLCONF = 'kopero.urls'
 
+# Templates
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -98,7 +105,7 @@ TEMPLATES = [
 
 AUTH_USER_MODEL = 'kopero_auth.BaseUser'
 
-
+# REST framework settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -112,60 +119,26 @@ REST_FRAMEWORK = {
     'COERCE_DECIMAL_TO_STRING': False,
 }
 
-
+# Simple JWT settings
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=365*5),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'UPDATE_LAST_LOGIN': False,
-
     'ALGORITHM': 'HS256',
     'SIGNING_KEY': SECRET_KEY,
-    'VERIFYING_KEY': None,
-    'AUDIENCE': None,
-    'ISSUER': None,
-
     'AUTH_HEADER_TYPES': ('Bearer',),
     'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
     'USER_ID_FIELD': 'id',
     'USER_ID_CLAIM': 'user_id',
-    'USER_AUTHENTICATION_RULE': 'rest_framework_simplejwt.authentication.default_user_authentication_rule',
-
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
-    'TOKEN_TYPE_CLAIM': 'token_type',
-
-    'JTI_CLAIM': 'jti',
-
-    'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
-    'SLIDING_TOKEN_LIFETIME': timedelta(hours=5),
-    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
 }
 
 USE_JWT = True
 JWT_AUTH_COOKIE = 'auth-cookie'
-OLD_PASSWORD_FIELD_ENABLED = False
 
-
-# ACCOUNT_ADAPTER = 'kopero_auth.adapter.CustomAccountAdapter'
-# ACCOUNT_USERNAME_REQUIRED = True
-# ACCOUNT_USER_MODEL_USERNAME_FIELD = 'username'
-# ACCOUNT_EMAIL_REQUIRED = True
-# ACCOUNT_AUTHENTICATION_METHOD = 'username_email'
-# USERNAME_FIELD="username"
-# ACCOUNT_LOGOUT_ON_GET = False
-# ACCOUNT_EMAIL_VERIFICATION="none"
-
-
-# REST_AUTH = {
-#     'LOGIN_SERIALIZER': "kopero_auth.serializers.CustomLoginSerializer",
-#     "PASSWORD_RESET_SERIALIZER": "kopero_auth.serializers.CustomPasswordResetSerializer",
-#     "USER_DETAILS_SERIALIZER": "kopero_auth.serializers.ReadUserSerializer",
-#     "PASSWORD_CHANGE_SERIALIZER": "kopero_auth.serializers.CustomPasswordChangeSerializer",
-#     'USE_JWT': True,
-#     "REGISTER_SERIALIZER": "kopero_auth.serializers.CustomRegisterSerializer"
-# }
-
+# Password validators
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -181,15 +154,18 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# Internationalization
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
+# Static files (CSS, JavaScript, Images)
 STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 SITE_ID = 1
 
+# Email configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 DEFAULT_FROM_EMAIL = "Kopero Studios <koperostudios@gmail.com>"
 EMAIL_HOST = 'smtp.gmail.com'
@@ -198,8 +174,7 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = config("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
 
-
-# CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS').split(',')
+# CSRF trusted origins
 CSRF_TRUSTED_ORIGINS = [
     'https://kopero-studios.vercel.app',
     'http://localhost:5173',
