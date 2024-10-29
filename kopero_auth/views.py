@@ -244,7 +244,7 @@ class ClientDetailView(BaseDetailView):
             Response: A response containing the serialized client data.
         """
         crew_member = self.get_object(pk)
-        serializer = ClientSerializer(crew_member)
+        serializer = ClientSerializer(crew_member, context={'request':request})
         return Response(serializer.data)
 
     def patch(self, request, pk=None):
