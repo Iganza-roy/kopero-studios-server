@@ -10,3 +10,6 @@ class ServiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Service
         fields = "__all__"
+    def get_image(self, obj):
+        # Return the relative URL for the image
+        return f"/media/{obj.image}" if obj.image else None

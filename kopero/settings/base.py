@@ -6,20 +6,13 @@ from datetime import timedelta
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # MEDIA settings
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
-# STATIC files settings
-STATIC_URL = '/static/'  # Add leading slash
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+MEDIA_URL = '/media/'  # URL to access media files
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # Directory to store media files
 
 # Site configuration
 SITE_ID = config("SITE_ID", cast=int)
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=Csv())
 DEBUG = config("DEBUG", cast=bool, default=False)
-
-if not DEBUG:
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 SECRET_KEY = config("SECRET_KEY")
 
@@ -30,8 +23,7 @@ DJANGO_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.staticfiles',
-    "django.contrib.sites",
+    'django.contrib.sites',
 ]
 
 # Third-party apps
@@ -63,7 +55,6 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',  # CORS middleware
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -114,7 +105,7 @@ REST_FRAMEWORK = {
 
 # Simple JWT settings
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=365*5),
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=365 * 5),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
@@ -167,11 +158,9 @@ EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
 
 # CSRF trusted origins
 CSRF_TRUSTED_ORIGINS = [
-    'https://kopero-studios.vercel.app',
+    'https://mady.tech',
     'http://localhost:5173',
     'http://127.0.0.1:5173',
-    'https://mady.tech',
-    'https://www.mady.tech',
 ]
 
-FRONTEND_URL = "https://kopero-studios.vercel.app"
+FRONTEND_URL = "https://mady.tech"
