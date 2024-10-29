@@ -168,4 +168,4 @@ EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
 #     'http://127.0.0.1:5173',
 # ]
 
-FRONTEND_URL = "https://mady.tech"
+FRONTEND_URL = "https://kopero-studios.vercel.app"

@@ -214,7 +214,7 @@ class AvailableTimeView(APIView):
                     'start_time': current_time.strftime('%H:%M'),
                     'end_time': (current_time + timedelta(hours=1)).strftime('%H:%M')
                 })
-            current_time += timedelta(hours=1)  # Move to the next hour
+            current_time += timedelta(hours=1)
 
         return Response(available_times, status=status.HTTP_200_OK)
     
