@@ -137,7 +137,7 @@ class ClientSerializer(serializers.ModelSerializer):
     """
     Serializer class for a Client instance for detail view
     """
-
+    image_url = serializers.SerializerMethodField('get_image_url')
     class Meta:
         model = Client
         fields = (
@@ -155,16 +155,19 @@ class ClientSerializer(serializers.ModelSerializer):
         )
         extra_kwargs = {"password": {"write_only": True}}
         read_only_fields = ("id", "full_name")
-    def get_image(self, obj):
-        # Return the relative URL for the image
-        return f"/media/{obj.image}" if obj.image else None
+    def get_image_url(self, obj):
+        request = self.context.get('request')
+        if obj.image is True:
+            url = request.build_absolute_uri(obj.image.url)
+        else:
+            url = ""
+        return url
 
 class ClientUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Client
         fields = ['image', 'first_name', 'last_name', 'phone', 'bio']
     def get_image(self, obj):
-        # Return the relative URL for the image
         return f"/media/{obj.image}" if obj.image else None
 
 
@@ -189,7 +192,6 @@ class ReadCrewSerializer(serializers.ModelSerializer):
         extra_kwargs = {"password": {"write_only": True}}
         read_only_fields = ("id", "full_name")
     def get_image(self, obj):
-        # Return the relative URL for the image
         return f"/media/{obj.image}" if obj.image else None
 
 class CrewSerializer(serializers.ModelSerializer):
@@ -217,7 +219,6 @@ class CrewSerializer(serializers.ModelSerializer):
         extra_kwargs = {"password": {"write_only": True}}
         read_only_fields = ("id", "full_name")
     def get_image(self, obj):
-        # Return the relative URL for the image
         return f"/media/{obj.image}" if obj.image else None
 
 class CrewUpdateSerializer(serializers.ModelSerializer):
@@ -228,7 +229,6 @@ class CrewUpdateSerializer(serializers.ModelSerializer):
         model = CrewMember
         fields = ['image', 'first_name', 'last_name', 'phone', 'bio',]
     def get_image(self, obj):
-        # Return the relative URL for the image
         return f"/media/{obj.image}" if obj.image else None
 
 class PasswordResetRequestSerializer(serializers.Serializer):

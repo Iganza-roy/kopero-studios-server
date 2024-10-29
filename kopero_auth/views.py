@@ -190,11 +190,11 @@ class ClientsListView(GenericAPIView):
         all_status = request.GET.get("all", None)
         queryset = self.get_queryset(request)
         if all_status is not None:
-            serializer = self.get_read_serializer_class()(queryset, many=True)
+            serializer = self.get_read_serializer_class()(queryset, many=True, context={'request':request})
             return Response(serializer.data) 
         else:  
             page = self.paginate_queryset(queryset)
-            serializer = self.get_read_serializer_class()(page, many=True)
+            serializer = self.get_read_serializer_class()(page, many=True, context={'request':request})
             return self.get_paginated_response(serializer.data)
 
 
