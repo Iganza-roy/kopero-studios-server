@@ -152,6 +152,7 @@ class ClientSerializer(serializers.ModelSerializer):
             "image",
             "bio",
             "is_active",
+            "image_url",
         )
         extra_kwargs = {"password": {"write_only": True}}
         read_only_fields = ("id", "full_name")
