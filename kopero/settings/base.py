@@ -1,9 +1,7 @@
 from pathlib import Path
 from decouple import config, Csv
-import datetime
 import os
 from datetime import timedelta
-import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -11,13 +9,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+# STATIC files settings
+STATIC_URL = '/static/'  # Add leading slash
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
 # Site configuration
 SITE_ID = config("SITE_ID", cast=int)
-ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=Csv(), default="127.0.0.1")
+ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=Csv())
 DEBUG = config("DEBUG", cast=bool, default=False)
 
 if not DEBUG:
-    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 SECRET_KEY = config("SECRET_KEY")
@@ -72,9 +73,8 @@ MIDDLEWARE = [
     'allauth.account.middleware.AccountMiddleware',
 ]
 
-CORS_ORIGIN_ALLOW_ALL=True
-CORS_ALLOW_CREDENTIALS=True
-
+CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_CREDENTIALS = True
 
 # URL configuration
 ROOT_URLCONF = 'kopero.urls'
@@ -153,8 +153,6 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# Static files (CSS, JavaScript, Images)
-STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 SITE_ID = 1
 
