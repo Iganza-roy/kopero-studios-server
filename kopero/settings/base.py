@@ -157,15 +157,15 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = config("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
 
-CORS_ALLOW_HEADERS = list(default_headers) + [
-    'authorization',
-]
+# CORS_ALLOW_HEADERS = list(default_headers) + [
+#     'authorization',
+# ]
 
 # CSRF trusted origins
-CSRF_TRUSTED_ORIGINS = [
-    'https://mady.tech',
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
-]
+# CSRF_TRUSTED_ORIGINS = [
+#     'https://mady.tech',
+#     'http://localhost:5173',
+#     'http://127.0.0.1:5173',
+# ]
 
 FRONTEND_URL = "https://mady.tech"
